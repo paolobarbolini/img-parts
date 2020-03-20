@@ -1,6 +1,7 @@
 use std::fs;
 
-use icc_editor::{RiffChunk, WebP};
+use icc_editor::riff::RiffChunk;
+use icc_editor::webp::{WebP, CHUNK_ICCP};
 
 #[test]
 fn inject_webp_noop1() {
@@ -42,9 +43,9 @@ fn inject_webp_result(input: &str, output: &str, icc: &str) {
     let icc = fs::read(format!("tests/{}", icc)).expect("read icc");
 
     let mut webp = WebP::read(&mut &file[..]).expect("parse webp");
-    webp.remove_chunks_by_id(*b"ICCP");
+    webp.remove_chunks_by_id(CHUNK_ICCP);
 
-    let chunk = RiffChunk::new(*b"ICCP", icc);
+    let chunk = RiffChunk::new(CHUNK_ICCP, icc);
     webp.chunks_mut().insert(0, chunk);
 
     let mut out = Vec::new();

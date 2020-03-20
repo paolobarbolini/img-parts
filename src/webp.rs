@@ -3,8 +3,19 @@ use std::io::{self, Read, Write};
 
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 
+use crate::riff::RiffChunk;
 use crate::vp8::decode_size_vp8_from_header;
-use crate::{Error, Result, RiffChunk, VP8Kind};
+use crate::vp8::VP8Kind;
+use crate::{Error, Result};
+
+pub const CHUNK_ALPH: [u8; 4] = [b'A', b'L', b'P', b'H'];
+pub const CHUNK_ANIM: [u8; 4] = [b'A', b'N', b'I', b'M'];
+pub const CHUNK_ANMF: [u8; 4] = [b'A', b'N', b'M', b'F'];
+pub const CHUNK_EXIF: [u8; 4] = [b'E', b'X', b'I', b'F'];
+pub const CHUNK_ICCP: [u8; 4] = [b'I', b'C', b'C', b'P'];
+pub const CHUNK_VP8: [u8; 4] = [b'V', b'P', b'8', b' '];
+pub const CHUNK_VP8L: [u8; 4] = [b'V', b'P', b'8', b'L'];
+pub const CHUNK_XMP: [u8; 4] = [b'X', b'M', b'P', b' '];
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WebP {
@@ -122,7 +133,7 @@ impl WebP {
         let mut len = 12 + 4;
 
         match kind {
-            VP8Kind::VP8 => len += self.chunk_by_id(*b"VP8 ").unwrap().len(),
+            VP8Kind::VP8 => len += self.chunk_by_id(CHUNK_VP8).unwrap().len(),
             VP8Kind::VP8L => unimplemented!(),
             VP8Kind::VP8X => {
                 // 4 bytes (Chunk Size) + 4 bytes (Flags) + 6 bytes (Canvas size)
@@ -160,7 +171,7 @@ impl WebP {
 
         match kind {
             VP8Kind::VP8 => {
-                let vp8 = self.chunk_by_id(*b"VP8 ").unwrap();
+                let vp8 = self.chunk_by_id(CHUNK_VP8).unwrap();
                 w.write_all(&vp8.clone().bytes())?;
             }
             VP8Kind::VP8L => unimplemented!(),
@@ -179,7 +190,7 @@ impl WebP {
                     w.write_u24::<LittleEndian>(width - 1)?;
                     w.write_u24::<LittleEndian>(height - 1)?;
                 } else {
-                    let vp8 = self.chunk_by_id(*b"VP8 ").unwrap();
+                    let vp8 = self.chunk_by_id(CHUNK_VP8).unwrap();
                     let (width, height) = decode_size_vp8_from_header(vp8.contents());
                     w.write_u24::<LittleEndian>((width - 1).into())?;
                     w.write_u24::<LittleEndian>((height - 1).into())?;
