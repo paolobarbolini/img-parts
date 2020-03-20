@@ -1,7 +1,7 @@
 use std::fs::{self, File};
 use std::io::BufReader;
 
-use icc_editor::Error;
+use icc_editor::WebP;
 
 #[test]
 fn extract_webp_noprofile() {
@@ -22,17 +22,15 @@ fn extract_webp_image(input: &str, icc: Option<&str>) {
     let file = File::open(format!("tests/{}", input)).expect("open webp");
     let mut reader = BufReader::new(file);
 
-    let output = icc_editor::icc_from_webp(&mut reader);
+    let webp = WebP::read(&mut reader).unwrap();
+    let iccp = webp.chunk_by_id(*b"ICCP");
 
     if let Some(icc) = icc {
-        let output = output.unwrap();
+        let iccp = iccp.unwrap();
 
         let saved = fs::read(format!("tests/{}", icc)).expect("read icc");
-        assert_eq!(output, saved);
+        assert_eq!(iccp.contents(), saved.as_slice());
     } else {
-        match output {
-            Err(Error::NoVP8X) => {}
-            _ => panic!("expected: 'Error::NoVP8X' got: {:?}", output),
-        }
+        assert!(iccp.is_none());
     }
 }

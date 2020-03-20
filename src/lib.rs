@@ -1,7 +1,9 @@
 pub use error::{Error, Result};
-pub use webp::{add_icc_to_webp, icc_from_webp};
+pub use riff::RiffChunk;
+pub use vp8::VP8Kind;
+pub use webp::{WebP, WebPFlags};
 
 mod error;
-pub(crate) mod riff;
+mod riff;
 pub(crate) mod vp8;
 mod webp;

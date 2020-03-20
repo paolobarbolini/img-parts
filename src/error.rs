@@ -7,10 +7,9 @@ pub enum Error {
     Io(io::Error),
 
     // webp
-    NoWebpMarker,
-    NoVP8X,
-    NoICC,
-    ImageDataReached,
+    NoRiffHeader,
+    NoWebpCC,
+    InvalidFormat([u8; 4]),
 }
 
 impl fmt::Display for Error {
@@ -18,10 +17,9 @@ impl fmt::Display for Error {
         match *self {
             Error::Io(ref err) => err.fmt(f),
 
-            Error::NoWebpMarker => write!(f, "no webp marker"),
-            Error::NoVP8X => write!(f, "no vp8x"),
-            Error::NoICC => write!(f, "no icc"),
-            Error::ImageDataReached => write!(f, "image data reached"),
+            Error::NoRiffHeader => write!(f, "no riff header"),
+            Error::NoWebpCC => write!(f, "no webp cc"),
+            Error::InvalidFormat(format) => write!(f, "invalid format: {:X?}", format),
         }
     }
 }
