@@ -1,0 +1,9 @@
+[package]
+name = "icc-editor"
+version = "0.0.0"
+authors = ["Paolo Barbolini <paolo@paolo565.org>"]
+license = "MIT"
+edition = "2018"
+
+[dependencies]
+byteorder = "1"
