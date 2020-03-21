@@ -3,6 +3,7 @@ use std::io::{Read, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
+use super::entropy::write_entropy;
 use crate::Result;
 
 pub struct JpegSegment {
@@ -71,6 +72,10 @@ impl JpegSegment {
     pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
         w.write_u16::<BigEndian>((self.contents.len() + 2).try_into().unwrap())?;
         w.write_all(&self.contents)?;
+
+        if let Some(entropy) = &self.entropy_data {
+            write_entropy(entropy, w)?;
+        }
 
         Ok(())
     }

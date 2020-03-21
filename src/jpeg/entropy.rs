@@ -1,6 +1,6 @@
-use std::io::{Read, Result};
+use std::io::{Read, Result, Write};
 
-use byteorder::ReadBytesExt;
+use byteorder::{ReadBytesExt, WriteBytesExt};
 
 use super::markers;
 
@@ -27,4 +27,17 @@ pub fn read_entropy(r: &mut dyn Read) -> Result<Vec<u8>> {
             }
         }
     }
+}
+
+pub fn write_entropy(entropy: &[u8], w: &mut dyn Write) -> Result<()> {
+    for byte in entropy {
+        w.write_u8(*byte)?;
+
+        if *byte == markers::P {
+            w.write_u8(0x00)?;
+        }
+    }
+
+    w.write_u8(markers::EOI)?;
+    Ok(())
 }
