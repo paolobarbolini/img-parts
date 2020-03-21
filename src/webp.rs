@@ -172,7 +172,7 @@ impl WebP {
         match kind {
             VP8Kind::VP8 => {
                 let vp8 = self.chunk_by_id(CHUNK_VP8).unwrap();
-                w.write_all(&vp8.clone().bytes())?;
+                vp8.write_to(w)?;
             }
             VP8Kind::VP8L => unimplemented!(),
             VP8Kind::VP8X => {
@@ -197,7 +197,7 @@ impl WebP {
                 }
 
                 for chunk in &self.chunks {
-                    w.write_all(&chunk.clone().bytes())?;
+                    chunk.write_to(w)?;
                 }
             }
         };

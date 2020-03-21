@@ -1,6 +1,6 @@
-use std::io::{Read, Result};
+use std::io::{Read, Result, Write};
 
-use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RiffChunk {
@@ -48,23 +48,15 @@ impl RiffChunk {
         len
     }
 
-    pub fn bytes(mut self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(self.len());
+    pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
+        w.write_all(&self.id)?;
+        w.write_u32::<LittleEndian>(self.contents().len() as u32)?;
+        w.write_all(&self.contents)?;
 
-        bytes.extend(&self.id);
-
-        let mut len: [u8; 4] = [0; 4];
-        LittleEndian::write_u32(&mut len, self.contents.len() as u32);
-        bytes.extend(&len);
-
-        let final_bit = self.contents.len() % 2 != 0;
-
-        bytes.append(&mut self.contents);
-
-        if final_bit {
-            bytes.push(0x00);
+        if self.contents.len() % 2 != 0 {
+            w.write_u8(0x00)?;
         }
 
-        bytes
+        Ok(())
     }
 }
