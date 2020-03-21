@@ -4,7 +4,7 @@ use std::io::{self, Read, Write};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use super::entropy::{read_entropy, write_entropy};
-use super::markers::{has_entropy, has_length};
+use super::markers::{self, has_entropy, has_length};
 use crate::Result;
 
 pub struct JpegSegment {
@@ -81,6 +81,8 @@ impl JpegSegment {
     }
 
     pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
+        w.write_u8(markers::P)?;
+        w.write_u8(self.marker())?;
         w.write_u16::<BigEndian>((self.size() - 2).try_into().unwrap())?;
         w.write_all(&self.contents)?;
 
