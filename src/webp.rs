@@ -31,7 +31,7 @@ pub struct WebPFlags([u8; 4]);
 #[allow(clippy::len_without_is_empty)]
 impl WebP {
     pub fn read(r: &mut dyn Read) -> Result<WebP> {
-        let mut buf: [u8; 1024] = [0; 1024];
+        let mut buf = [0u8; 16];
         r.read_exact(&mut buf[0..16])?;
 
         if &buf[0..4] != b"RIFF" {
