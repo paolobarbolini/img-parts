@@ -1,5 +1,5 @@
 use std::convert::TryInto;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
@@ -75,8 +75,8 @@ impl JpegSegment {
         self.contents.as_slice()
     }
 
-    pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
-        w.write_u16::<BigEndian>((self.contents.len() + 2).try_into().unwrap())?;
+    pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
+        w.write_u16::<BigEndian>((self.size() - 2).try_into().unwrap())?;
         w.write_all(&self.contents)?;
 
         if let Some(entropy) = &self.entropy_data {
