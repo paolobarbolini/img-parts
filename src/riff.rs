@@ -27,6 +27,10 @@ impl RiffChunk {
         let mut contents = Vec::with_capacity(len as usize);
         r.take(len as u64).read_to_end(&mut contents)?;
 
+        if len % 2 != 0 {
+            r.read_u8()?;
+        }
+
         Ok(RiffChunk::new(id, contents))
     }
 
