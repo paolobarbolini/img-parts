@@ -145,6 +145,12 @@ impl Jpeg {
             match marker {
                 marker::EOI => break,
                 _ => {
+                    if !marker::has_length(marker) {
+                        let segment = JpegSegment::new(marker);
+                        segments.push(segment);
+                        continue;
+                    }
+
                     if marker::has_length(marker) {
                         let mut segment = JpegSegment::read(marker, r)?;
 
@@ -260,7 +266,16 @@ impl Jpeg {
 
 impl JpegSegment {
     #[inline]
-    pub fn new(marker: u8, contents: Vec<u8>) -> JpegSegment {
+    pub fn new(marker: u8) -> JpegSegment {
+        JpegSegment {
+            marker,
+            contents: Vec::new(),
+            entropy_data: None,
+        }
+    }
+
+    #[inline]
+    pub fn new_with_contents(marker: u8, contents: Vec<u8>) -> JpegSegment {
         JpegSegment {
             marker,
             contents,
@@ -283,7 +298,7 @@ impl JpegSegment {
         let mut contents = Vec::with_capacity(size as usize);
         r.take(size as u64).read_to_end(&mut contents)?;
 
-        Ok(JpegSegment::new(marker, contents))
+        Ok(JpegSegment::new_with_contents(marker, contents))
     }
 
     #[inline]
