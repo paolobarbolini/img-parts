@@ -6,6 +6,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     Io(io::Error),
 
+    // jpeg
+    FirstTwoBytesNotSOI,
+
     // webp
     NoRiffHeader,
     NoWebpCC,
@@ -16,6 +19,8 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::Io(ref err) => err.fmt(f),
+
+            Error::FirstTwoBytesNotSOI => write!(f, "first two bytes is not a SOI marker"),
 
             Error::NoRiffHeader => write!(f, "no riff header"),
             Error::NoWebpCC => write!(f, "no webp cc"),
