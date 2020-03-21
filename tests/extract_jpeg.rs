@@ -18,6 +18,11 @@ fn extract_jpeg_adobergb() {
     extract_jpeg_image("P1133897_AdobeRGB.jpg", Some("P1133897_AdobeRGB.icc"));
 }
 
+#[test]
+fn extract_jpeg_plane() {
+    extract_jpeg_image("P1133897.plane.jpg", None);
+}
+
 fn extract_jpeg_image(input: &str, icc: Option<&str>) {
     let file = File::open(format!("tests/{}", input)).expect("open jpeg");
     let mut reader = BufReader::new(file);
