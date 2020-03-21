@@ -141,48 +141,42 @@ impl Jpeg {
             }
 
             let marker = r.read_u8()?;
+            if marker == marker::EOI {
+                break;
+            }
 
-            match marker {
-                marker::EOI => break,
-                _ => {
-                    if !marker::has_length(marker) {
-                        let segment = JpegSegment::new(marker);
+            if !marker::has_length(marker) {
+                let segment = JpegSegment::new(marker);
+                segments.push(segment);
+                continue;
+            }
+
+            let mut segment = JpegSegment::read(marker, r)?;
+            if !marker::has_entropy(marker) {
+                segments.push(segment);
+                continue;
+            }
+
+            let mut entropy = Vec::new();
+            loop {
+                let byte = r.read_u8()?;
+                if byte != marker::P {
+                    entropy.push(byte);
+                    continue;
+                }
+
+                let marker_byte = r.read_u8()?;
+
+                match marker_byte {
+                    marker::EOI => {
+                        segment.set_entropy_data(Some(entropy));
                         segments.push(segment);
-                        continue;
+                        break 'main;
                     }
-
-                    if marker::has_length(marker) {
-                        let mut segment = JpegSegment::read(marker, r)?;
-
-                        if marker::has_entropy(marker) {
-                            let mut entropy = Vec::new();
-
-                            loop {
-                                let byte = r.read_u8()?;
-
-                                match byte {
-                                    marker::P => {
-                                        let byte2 = r.read_u8()?;
-
-                                        match byte2 {
-                                            marker::EOI => {
-                                                segment.set_entropy_data(Some(entropy));
-                                                segments.push(segment);
-                                                break 'main;
-                                            }
-                                            marker::Z => {}
-                                            _ => {
-                                                entropy.push(byte);
-                                                entropy.push(byte2);
-                                            }
-                                        }
-                                    }
-                                    _ => entropy.push(byte),
-                                };
-                            }
-                        }
-
-                        segments.push(segment);
+                    marker::Z => {}
+                    _ => {
+                        entropy.push(byte);
+                        entropy.push(marker_byte);
                     }
                 }
             }
