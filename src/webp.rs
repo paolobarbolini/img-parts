@@ -28,7 +28,6 @@ pub struct WebP {
 #[derive(Debug, Clone, PartialEq)]
 pub struct WebPFlags([u8; 4]);
 
-#[allow(clippy::len_without_is_empty)]
 impl WebP {
     pub fn read(r: &mut dyn Read) -> Result<WebP> {
         let mut buf = [0u8; 16];
@@ -71,7 +70,7 @@ impl WebP {
                 let mut read = 15;
                 while (read + 16) < len {
                     let chunk = RiffChunk::read(r)?;
-                    read += chunk.len() as u32;
+                    read += chunk.size() as u32;
                     chunks.push(chunk);
                 }
 
@@ -124,23 +123,23 @@ impl WebP {
     }
 
     #[inline]
-    pub fn len(&self) -> usize {
-        self.len_with_kind(&self.kind)
+    pub fn size(&self) -> usize {
+        self.size_with_kind(&self.kind)
     }
 
-    fn len_with_kind(&self, kind: &VP8Kind) -> usize {
+    fn size_with_kind(&self, kind: &VP8Kind) -> usize {
         // 12 bytes (header) + 4 bytes (kind)
         let mut len = 12 + 4;
 
         match kind {
-            VP8Kind::VP8 => len += self.chunk_by_id(CHUNK_VP8).unwrap().len(),
+            VP8Kind::VP8 => len += self.chunk_by_id(CHUNK_VP8).unwrap().size(),
             VP8Kind::VP8L => unimplemented!(),
             VP8Kind::VP8X => {
                 // 4 bytes (Chunk Size) + 4 bytes (Flags) + 6 bytes (Canvas size)
                 len += 4 + 4 + 6;
 
                 // Sum of the length of every chunk
-                len += self.chunks.iter().map(|chunk| chunk.len()).sum::<usize>();
+                len += self.chunks.iter().map(|chunk| chunk.size()).sum::<usize>();
             }
         };
 
@@ -162,7 +161,7 @@ impl WebP {
 
     pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
         let kind = self.suggested_kind();
-        let len = self.len_with_kind(&kind);
+        let len = self.size_with_kind(&kind);
 
         // WebP file header
         w.write_all(b"RIFF")?;

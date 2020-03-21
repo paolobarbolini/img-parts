@@ -8,7 +8,6 @@ pub struct RiffChunk {
     contents: Vec<u8>,
 }
 
-#[allow(clippy::len_without_is_empty)]
 impl RiffChunk {
     pub fn new(id: [u8; 4], contents: Vec<u8>) -> RiffChunk {
         RiffChunk { id, contents }
@@ -42,7 +41,7 @@ impl RiffChunk {
         self.contents.as_slice()
     }
 
-    pub fn len(&self) -> usize {
+    pub fn size(&self) -> usize {
         let mut len = 4 + 4 + self.contents.len();
 
         if self.contents.len() % 2 != 0 {
