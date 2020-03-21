@@ -2,6 +2,7 @@ use std::io::Read;
 
 use byteorder::ReadBytesExt;
 
+use super::entropy::read_entropy;
 use super::markers;
 use super::JpegSegment;
 use crate::{Error, Result};
@@ -20,7 +21,7 @@ impl Jpeg {
         }
 
         let mut segments = Vec::new();
-        'main: loop {
+        loop {
             let fmb = r.read_u8()?;
             if fmb != markers::P {
                 continue;
@@ -43,29 +44,10 @@ impl Jpeg {
                 continue;
             }
 
-            let mut entropy = Vec::new();
-            loop {
-                let byte = r.read_u8()?;
-                if byte != markers::P {
-                    entropy.push(byte);
-                    continue;
-                }
-
-                let marker_byte = r.read_u8()?;
-
-                match marker_byte {
-                    markers::EOI => {
-                        segment.set_entropy_data(Some(entropy));
-                        segments.push(segment);
-                        break 'main;
-                    }
-                    markers::Z => {}
-                    _ => {
-                        entropy.push(byte);
-                        entropy.push(marker_byte);
-                    }
-                }
-            }
+            let entropy = read_entropy(r)?;
+            segment.set_entropy_data(Some(entropy));
+            segments.push(segment);
+            break;
         }
 
         Ok(Jpeg { segments })
