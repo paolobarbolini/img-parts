@@ -1,6 +1,7 @@
-use std::io::Read;
+use std::convert::TryInto;
+use std::io::{Read, Write};
 
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::{Error, Result};
 
@@ -188,5 +189,12 @@ impl JpegComponent {
     #[inline]
     pub fn contents(&self) -> &[u8] {
         self.contents.as_slice()
+    }
+
+    pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
+        w.write_u16::<BigEndian>((self.contents.len() + 2).try_into().unwrap())?;
+        w.write_all(&self.contents)?;
+
+        Ok(())
     }
 }
