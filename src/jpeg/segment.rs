@@ -4,6 +4,7 @@ use std::io::{Read, Write};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use super::entropy::write_entropy;
+use super::markers::has_length;
 use crate::Result;
 
 pub struct JpegSegment {
@@ -55,8 +56,13 @@ impl JpegSegment {
     }
 
     pub fn size(&self) -> usize {
-        // 2 bytes (marker) + 2 bytes (length) + length of the content
-        2 + 2 + self.contents.len()
+        if has_length(self.marker) {
+            // 2 bytes (marker) + 2 bytes (length) + length of the content
+            2 + 2 + self.contents.len()
+        } else {
+            // 2 bytes (marker) + length of the content
+            2 + self.contents.len()
+        }
     }
 
     #[inline]
