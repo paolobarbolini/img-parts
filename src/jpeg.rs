@@ -129,15 +129,15 @@ impl Jpeg {
             return None;
         }
 
-        let app2s_n = app2s.len();
+        let mut app2s_n = app2s.len();
 
         let mut total_len = 0;
         let mut sequences = Vec::with_capacity(app2s_n);
         for app2 in app2s {
             let contents = app2.contents();
             if contents.get(0..12) != Some(b"ICC_PROFILE\0") {
-                // TODO: invalid start
-                return None;
+                app2s_n -= 1;
+                continue;
             }
 
             let seqno = *contents.get(12).unwrap() as usize; // TODO: not enough bytes
@@ -157,6 +157,10 @@ impl Jpeg {
 
             total_len += sequence.len();
             sequences.insert(seqno - 1, sequence);
+        }
+
+        if total_len == 0 {
+            return None;
         }
 
         let mut final_sequence = Vec::with_capacity(total_len);
