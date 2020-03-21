@@ -58,7 +58,6 @@ pub mod marker {
     // Expand Reference Component
     pub const EXP: u8 = 0xDF;
 
-
     // Application Segments
     pub const APP0: u8 = 0xE0;
     pub const APP1: u8 = 0xE1;
@@ -107,10 +106,10 @@ pub mod marker {
 }
 
 pub struct Jpeg {
-    components: Vec<JpegComponent>,
+    segments: Vec<JpegSegment>,
 }
 
-pub struct JpegComponent {
+pub struct JpegSegment {
     marker: u8,
     contents: Vec<u8>,
 }
@@ -124,7 +123,7 @@ impl Jpeg {
             return Err(Error::FirstTwoBytesNotSOI);
         }
 
-        let mut components = Vec::new();
+        let mut segments = Vec::new();
         loop {
             let marker = r.read_u8()?;
 
@@ -132,8 +131,8 @@ impl Jpeg {
                 marker::EOI => break,
                 _ => {
                     if marker::has_length(marker) {
-                        let content = JpegComponent::read(marker, r)?;
-                        components.push(content);
+                        let content = JpegSegment::read(marker, r)?;
+                        segments.push(content);
                     }
                 }
             }
@@ -144,31 +143,31 @@ impl Jpeg {
             }
         }
 
-        Ok(Jpeg { components })
+        Ok(Jpeg { segments })
     }
 
     #[inline]
-    pub fn components(&self) -> &[JpegComponent] {
-        self.components.as_slice()
+    pub fn segments(&self) -> &[JpegSegment] {
+        self.segments.as_slice()
     }
 
     #[inline]
-    pub fn components_mut(&mut self) -> &mut Vec<JpegComponent> {
-        &mut self.components
+    pub fn segments_mut(&mut self) -> &mut Vec<JpegSegment> {
+        &mut self.segments
     }
 
     #[inline]
-    pub fn component_by_marker(&self, marker: u8) -> Option<&JpegComponent> {
-        self.components
+    pub fn component_by_marker(&self, marker: u8) -> Option<&JpegSegment> {
+        self.segments
             .iter()
-            .find(|component| component.marker() == marker)
+            .find(|segment| segment.marker() == marker)
     }
 
     #[inline]
-    pub fn components_by_marker(&self, marker: u8) -> Vec<&JpegComponent> {
-        self.components
+    pub fn components_by_marker(&self, marker: u8) -> Vec<&JpegSegment> {
+        self.segments
             .iter()
-            .filter(|component| component.marker() == marker)
+            .filter(|segment| segment.marker() == marker)
             .collect()
     }
 
@@ -220,18 +219,18 @@ impl Jpeg {
     }
 }
 
-impl JpegComponent {
-    pub fn new(marker: u8, contents: Vec<u8>) -> JpegComponent {
-        JpegComponent { marker, contents }
+impl JpegSegment {
+    pub fn new(marker: u8, contents: Vec<u8>) -> JpegSegment {
+        JpegSegment { marker, contents }
     }
 
-    pub fn read(marker: u8, r: &mut dyn Read) -> Result<JpegComponent> {
+    pub fn read(marker: u8, r: &mut dyn Read) -> Result<JpegSegment> {
         let size = r.read_u16::<BigEndian>()? - 2;
 
         let mut contents = Vec::with_capacity(size as usize);
         r.take(size as u64).read_to_end(&mut contents)?;
 
-        Ok(JpegComponent::new(marker, contents))
+        Ok(JpegSegment::new(marker, contents))
     }
 
     pub fn size(&self) -> usize {
