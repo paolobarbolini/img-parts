@@ -90,10 +90,11 @@ pub const COM: u8 = 0xFE;
 pub fn has_length(marker: u8) -> bool {
     match marker {
         RST0..=RST7 => true,
-        APP1..=APP15 => true,
+        APP0..=APP15 => true,
         SOF0..=SOF15 => true,
         SOS => true,
         COM => true,
+        DQT => true,
         _ => false,
     }
 }
