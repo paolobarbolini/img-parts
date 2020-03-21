@@ -1,6 +1,6 @@
-use std::io::Read;
+use std::io::{self, Read, Write};
 
-use byteorder::ReadBytesExt;
+use byteorder::{ReadBytesExt, WriteBytesExt};
 
 use super::markers;
 use super::JpegSegment;
@@ -26,7 +26,14 @@ impl Jpeg {
                 continue;
             }
 
-            let marker = r.read_u8()?;
+            let mut marker;
+            loop {
+                marker = r.read_u8()?;
+                if marker != markers::P {
+                    break;
+                }
+            }
+
             if marker == markers::EOI {
                 break;
             }
@@ -72,6 +79,17 @@ impl Jpeg {
             .iter()
             .filter(|segment| segment.marker() == marker)
             .collect()
+    }
+
+    pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
+        w.write_u8(markers::P)?;
+        w.write_u8(markers::SOI)?;
+
+        for segment in &self.segments {
+            segment.write_to(w)?;
+        }
+
+        Ok(())
     }
 
     pub fn icc_profile(&self) -> Option<Vec<u8>> {
