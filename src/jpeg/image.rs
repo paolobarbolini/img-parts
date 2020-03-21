@@ -2,7 +2,6 @@ use std::io::Read;
 
 use byteorder::ReadBytesExt;
 
-use super::entropy::read_entropy;
 use super::markers;
 use super::JpegSegment;
 use crate::{Error, Result};
@@ -38,16 +37,13 @@ impl Jpeg {
                 continue;
             }
 
-            let mut segment = JpegSegment::read(marker, r)?;
-            if !markers::has_entropy(marker) {
-                segments.push(segment);
-                continue;
-            }
-
-            let entropy = read_entropy(r)?;
-            segment.set_entropy_data(Some(entropy));
+            let segment = JpegSegment::read(marker, r)?;
+            let has_entropy = segment.has_entropy();
             segments.push(segment);
-            break;
+
+            if has_entropy {
+                break;
+            }
         }
 
         Ok(Jpeg { segments })

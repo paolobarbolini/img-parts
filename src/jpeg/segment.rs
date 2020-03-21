@@ -3,8 +3,8 @@ use std::io::{self, Read, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-use super::entropy::write_entropy;
-use super::markers::has_length;
+use super::entropy::{read_entropy, write_entropy};
+use super::markers::{has_entropy, has_length};
 use crate::Result;
 
 pub struct JpegSegment {
@@ -47,12 +47,12 @@ impl JpegSegment {
         let mut contents = Vec::with_capacity(size as usize);
         r.take(size as u64).read_to_end(&mut contents)?;
 
-        Ok(JpegSegment::new_with_contents(marker, contents))
-    }
-
-    #[inline]
-    pub fn set_entropy_data(&mut self, entropy: Option<Vec<u8>>) {
-        self.entropy_data = entropy;
+        if !has_entropy(marker) {
+            Ok(JpegSegment::new_with_contents(marker, contents))
+        } else {
+            let entropy = read_entropy(r)?;
+            Ok(JpegSegment::new_with_entropy(marker, contents, entropy))
+        }
     }
 
     pub fn size(&self) -> usize {
@@ -73,6 +73,11 @@ impl JpegSegment {
     #[inline]
     pub fn contents(&self) -> &[u8] {
         self.contents.as_slice()
+    }
+
+    #[inline]
+    pub fn has_entropy(&self) -> bool {
+        self.entropy_data.is_some()
     }
 
     pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
