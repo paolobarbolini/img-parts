@@ -234,6 +234,11 @@ impl JpegComponent {
         Ok(JpegComponent::new(marker, contents))
     }
 
+    pub fn size(&self) -> usize {
+        // 2 bytes (marker) + 2 bytes (length) + length of the content
+        2 + 2 + self.contents.len()
+    }
+
     #[inline]
     pub fn marker(&self) -> u8 {
         self.marker
