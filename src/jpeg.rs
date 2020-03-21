@@ -100,6 +100,15 @@ pub mod marker {
             RST0..=RST7 => true,
             APP1..=APP15 => true,
             SOF0..=SOF15 => true,
+            SOS => true,
+            COM => true,
+            _ => false,
+        }
+    }
+
+    pub fn has_entropy(marker: u8) -> bool {
+        match marker {
+            SOS => true,
             _ => false,
         }
     }
@@ -112,6 +121,7 @@ pub struct Jpeg {
 pub struct JpegSegment {
     marker: u8,
     contents: Vec<u8>,
+    entropy_data: Option<Vec<u8>>,
 }
 
 impl Jpeg {
@@ -124,22 +134,51 @@ impl Jpeg {
         }
 
         let mut segments = Vec::new();
-        loop {
+        'main: loop {
+            let fmb = r.read_u8()?;
+            if fmb != marker::P {
+                continue;
+            }
+
             let marker = r.read_u8()?;
 
             match marker {
                 marker::EOI => break,
                 _ => {
                     if marker::has_length(marker) {
-                        let content = JpegSegment::read(marker, r)?;
-                        segments.push(content);
+                        let mut segment = JpegSegment::read(marker, r)?;
+
+                        if marker::has_entropy(marker) {
+                            let mut entropy = Vec::new();
+
+                            loop {
+                                let byte = r.read_u8()?;
+
+                                match byte {
+                                    marker::P => {
+                                        let byte2 = r.read_u8()?;
+
+                                        match byte2 {
+                                            marker::EOI => {
+                                                segment.set_entropy_data(Some(entropy));
+                                                segments.push(segment);
+                                                break 'main;
+                                            }
+                                            marker::Z => {}
+                                            _ => {
+                                                entropy.push(byte);
+                                                entropy.push(byte2);
+                                            }
+                                        }
+                                    }
+                                    _ => entropy.push(byte),
+                                };
+                            }
+                        }
+
+                        segments.push(segment);
                     }
                 }
-            }
-
-            // TODO: remove once we can read all markers
-            if marker >= marker::SOF0 && marker <= marker::SOF15 {
-                break;
             }
         }
 
@@ -220,8 +259,22 @@ impl Jpeg {
 }
 
 impl JpegSegment {
+    #[inline]
     pub fn new(marker: u8, contents: Vec<u8>) -> JpegSegment {
-        JpegSegment { marker, contents }
+        JpegSegment {
+            marker,
+            contents,
+            entropy_data: None,
+        }
+    }
+
+    #[inline]
+    pub fn new_with_entropy(marker: u8, contents: Vec<u8>, entropy: Vec<u8>) -> JpegSegment {
+        JpegSegment {
+            marker,
+            contents,
+            entropy_data: Some(entropy),
+        }
     }
 
     pub fn read(marker: u8, r: &mut dyn Read) -> Result<JpegSegment> {
@@ -231,6 +284,11 @@ impl JpegSegment {
         r.take(size as u64).read_to_end(&mut contents)?;
 
         Ok(JpegSegment::new(marker, contents))
+    }
+
+    #[inline]
+    pub fn set_entropy_data(&mut self, entropy: Option<Vec<u8>>) {
+        self.entropy_data = entropy;
     }
 
     pub fn size(&self) -> usize {
