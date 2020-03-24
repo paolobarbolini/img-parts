@@ -1,6 +1,6 @@
 use byteorder::{ByteOrder, LittleEndian};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum VP8Kind {
     VP8,
     VP8L,
@@ -8,7 +8,7 @@ pub enum VP8Kind {
 }
 
 impl VP8Kind {
-    pub fn to_bytes(&self) -> [u8; 4] {
+    pub fn to_bytes(self) -> [u8; 4] {
         match self {
             VP8Kind::VP8 => *b"VP8 ",
             VP8Kind::VP8L => *b"VP8L",

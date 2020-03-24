@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::fmt;
 use std::io::{self, Read, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -7,6 +8,7 @@ use super::entropy::Entropy;
 use super::markers::{self, has_entropy, has_length};
 use crate::Result;
 
+#[derive(Clone, PartialEq)]
 pub struct JpegSegment {
     marker: u8,
     contents: Vec<u8>,
@@ -91,5 +93,13 @@ impl JpegSegment {
         }
 
         Ok(())
+    }
+}
+
+impl fmt::Debug for JpegSegment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("JpegSegment")
+            .field("marker", &self.marker)
+            .finish()
     }
 }

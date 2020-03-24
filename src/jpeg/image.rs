@@ -6,6 +6,7 @@ use super::markers;
 use super::JpegSegment;
 use crate::{Error, Result};
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Jpeg {
     segments: Vec<JpegSegment>,
 }

@@ -4,6 +4,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 
 use super::markers;
 
+#[derive(Clone, PartialEq)]
 pub struct Entropy {
     data: Vec<u8>,
     markers: Vec<usize>,

@@ -1,8 +1,9 @@
+use std::fmt;
 use std::io::{Read, Result, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct RiffChunk {
     id: [u8; 4],
     contents: Vec<u8>,
@@ -61,5 +62,11 @@ impl RiffChunk {
         }
 
         Ok(())
+    }
+}
+
+impl fmt::Debug for RiffChunk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RiffChunk").field("id", &self.id).finish()
     }
 }

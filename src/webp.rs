@@ -25,7 +25,7 @@ pub struct WebP {
     chunks: Vec<RiffChunk>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct WebPFlags([u8; 4]);
 
 impl WebP {
@@ -124,10 +124,10 @@ impl WebP {
 
     #[inline]
     pub fn size(&self) -> usize {
-        self.size_with_kind(&self.kind)
+        self.size_with_kind(self.kind)
     }
 
-    fn size_with_kind(&self, kind: &VP8Kind) -> usize {
+    fn size_with_kind(&self, kind: VP8Kind) -> usize {
         // 12 bytes (header) + 4 bytes (kind)
         let mut len = 12 + 4;
 
@@ -161,7 +161,7 @@ impl WebP {
 
     pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
         let kind = self.suggested_kind();
-        let len = self.size_with_kind(&kind);
+        let len = self.size_with_kind(kind);
 
         // WebP file header
         w.write_all(b"RIFF")?;
