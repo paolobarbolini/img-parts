@@ -1,4 +1,8 @@
 # icc-editor
+
+[![CI](https://github.com/paolobarbolini/icc-editor/workflows/CI/badge.svg)](https://github.com/paolobarbolini/icc-editor/actions?query=workflow%3ACI)
+[![Rustc Version 1.34.2+](https://img.shields.io/badge/rustc-1.34.2+-lightgray.svg)](https://blog.rust-lang.org/2019/04/11/Rust-1.34.0.html)
+
 A WIP crate for accessing and editing the ICC profile in images
 
 ## License
