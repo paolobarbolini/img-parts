@@ -219,6 +219,15 @@ impl ImageICC for WebP {
         self.chunk_by_id(CHUNK_ICCP)
             .map(|chunk| chunk.contents().to_vec())
     }
+
+    fn set_icc_profile(&mut self, profile: Option<Vec<u8>>) {
+        self.remove_chunks_by_id(CHUNK_ICCP);
+
+        if let Some(profile) = profile {
+            let chunk = RiffChunk::new(CHUNK_ICCP, profile);
+            self.chunks_mut().insert(0, chunk);
+        }
+    }
 }
 
 impl Default for WebPFlags {

@@ -6,6 +6,9 @@ use super::markers;
 use super::JpegSegment;
 use crate::{Error, ImageICC, Result};
 
+// max chunk size: u16::max_value() - segment size (2 byte) - segment meta (14 byte)
+const ICC_SEGMENT_MAX_SIZE: usize = 65535 - 2 - 14;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Jpeg {
     segments: Vec<JpegSegment>,
@@ -118,11 +121,14 @@ impl ImageICC for Jpeg {
                 return None;
             }
 
+            println!("SEQNO: {}", seqno);
+
             let num = *contents.get(13)? as usize;
             if num != app2s_n {
                 // TODO: invalid number of markers
                 return None;
             }
+            println!("numnumnumnumnum: {}", num);
 
             let mut sequence = Vec::with_capacity(contents.len() - 14);
             sequence.extend(&contents[14..]);
@@ -140,5 +146,30 @@ impl ImageICC for Jpeg {
             final_sequence.append(&mut sequence);
         }
         Some(final_sequence)
+    }
+
+    fn set_icc_profile(&mut self, profile: Option<Vec<u8>>) {
+        self.segments.retain(|segment| {
+            segment.marker() != markers::APP2
+                || segment.contents().get(0..12) != Some(b"ICC_PROFILE\0")
+        });
+
+        if let Some(profile) = profile {
+            let segments_n = profile.len() / ICC_SEGMENT_MAX_SIZE + 1;
+            for i in 0..segments_n {
+                let start = ICC_SEGMENT_MAX_SIZE * i;
+                let end = std::cmp::min(profile.len(), start + ICC_SEGMENT_MAX_SIZE);
+                let len = end - start;
+
+                let mut contents = Vec::with_capacity(len);
+                contents.extend(b"ICC_PROFILE\0");
+                contents.push(i as u8 + 1);
+                contents.push(segments_n as u8);
+                contents.extend(profile.get(start..end).unwrap());
+
+                let segment = JpegSegment::new_with_contents(markers::APP2, contents);
+                self.segments.insert(3, segment);
+            }
+        }
     }
 }
