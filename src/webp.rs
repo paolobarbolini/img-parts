@@ -85,8 +85,8 @@ impl WebP {
     }
 
     #[inline]
-    pub fn kind(&self) -> &VP8Kind {
-        &self.kind
+    pub fn kind(&self) -> VP8Kind {
+        self.kind
     }
 
     #[inline]
