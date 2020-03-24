@@ -112,13 +112,13 @@ impl ImageICC for Jpeg {
                 continue;
             }
 
-            let seqno = *contents.get(12).unwrap() as usize; // TODO: not enough bytes
+            let seqno = *contents.get(12)? as usize;
             if seqno == 0 || seqno > app2s_n {
                 // TODO: invalid sequence number
                 return None;
             }
 
-            let num = *contents.get(13).unwrap() as usize; // TODO: not enough bytes
+            let num = *contents.get(13)? as usize;
             if num != app2s_n {
                 // TODO: invalid number of markers
                 return None;

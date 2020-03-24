@@ -1,5 +1,5 @@
 use std::convert::{TryFrom, TryInto};
-use std::io::{self, Read, Write};
+use std::io::{Read, Write};
 
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 
@@ -123,16 +123,21 @@ impl WebP {
     }
 
     #[inline]
-    pub fn size(&self) -> usize {
+    pub fn size(&self) -> Result<usize> {
         self.size_with_kind(self.kind)
     }
 
-    fn size_with_kind(&self, kind: VP8Kind) -> usize {
+    fn size_with_kind(&self, kind: VP8Kind) -> Result<usize> {
         // 12 bytes (header) + 4 bytes (kind)
         let mut len = 12 + 4;
 
         match kind {
-            VP8Kind::VP8 => len += self.chunk_by_id(CHUNK_VP8).unwrap().size(),
+            VP8Kind::VP8 => {
+                len += self
+                    .chunk_by_id(CHUNK_VP8)
+                    .ok_or_else(|| Error::NoChunk(CHUNK_VP8))?
+                    .size()
+            }
             VP8Kind::VP8L => unimplemented!(),
             VP8Kind::VP8X => {
                 // 4 bytes (Chunk Size) + 4 bytes (Flags) + 6 bytes (Canvas size)
@@ -143,7 +148,7 @@ impl WebP {
             }
         };
 
-        len
+        Ok(len)
     }
 
     fn suggested_kind(&self) -> VP8Kind {
@@ -159,18 +164,20 @@ impl WebP {
         }
     }
 
-    pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
+    pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
         let kind = self.suggested_kind();
-        let len = self.size_with_kind(kind);
+        let len = self.size_with_kind(kind)?;
 
         // WebP file header
         w.write_all(b"RIFF")?;
-        w.write_u32::<LittleEndian>(u32::try_from(len).unwrap() - 8)?;
+        w.write_u32::<LittleEndian>(u32::try_from(len - 8).unwrap())?;
         w.write_all(b"WEBP")?;
 
         match kind {
             VP8Kind::VP8 => {
-                let vp8 = self.chunk_by_id(CHUNK_VP8).unwrap();
+                let vp8 = self
+                    .chunk_by_id(CHUNK_VP8)
+                    .ok_or_else(|| Error::NoChunk(CHUNK_VP8))?;
                 vp8.write_to(w)?;
             }
             VP8Kind::VP8L => unimplemented!(),
@@ -189,7 +196,9 @@ impl WebP {
                     w.write_u24::<LittleEndian>(width - 1)?;
                     w.write_u24::<LittleEndian>(height - 1)?;
                 } else {
-                    let vp8 = self.chunk_by_id(CHUNK_VP8).unwrap();
+                    let vp8 = self
+                        .chunk_by_id(CHUNK_VP8)
+                        .ok_or_else(|| Error::NoChunk(CHUNK_VP8))?;
                     let (width, height) = decode_size_vp8_from_header(vp8.contents());
                     w.write_u24::<LittleEndian>((width - 1).into())?;
                     w.write_u24::<LittleEndian>((height - 1).into())?;

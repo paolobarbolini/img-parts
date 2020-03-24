@@ -12,6 +12,7 @@ pub enum Error {
     // webp
     NoRiffHeader,
     NoWebpCC,
+    NoChunk([u8; 4]),
     InvalidFormat([u8; 4]),
 }
 
@@ -24,6 +25,7 @@ impl fmt::Display for Error {
 
             Error::NoRiffHeader => write!(f, "no riff header"),
             Error::NoWebpCC => write!(f, "no webp cc"),
+            Error::NoChunk(id) => write!(f, "no chunk of id: {:X?}", id),
             Error::InvalidFormat(format) => write!(f, "invalid format: {:X?}", format),
         }
     }
