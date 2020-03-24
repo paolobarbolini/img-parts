@@ -4,7 +4,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 
 use super::markers;
 use super::JpegSegment;
-use crate::{Error, Result};
+use crate::{Error, ImageICC, Result};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Jpeg {
@@ -92,8 +92,10 @@ impl Jpeg {
 
         Ok(())
     }
+}
 
-    pub fn icc_profile(&self) -> Option<Vec<u8>> {
+impl ImageICC for Jpeg {
+    fn icc_profile(&self) -> Option<Vec<u8>> {
         let app2s = self.components_by_marker(markers::APP2);
         if app2s.is_empty() {
             return None;

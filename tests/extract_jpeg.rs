@@ -2,6 +2,7 @@ use std::fs::{self, File};
 use std::io::BufReader;
 
 use icc_editor::jpeg::Jpeg;
+use icc_editor::ImageICC;
 
 #[test]
 fn extract_jpeg_noprofile() {

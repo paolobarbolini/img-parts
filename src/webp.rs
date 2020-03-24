@@ -6,7 +6,7 @@ use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 use crate::riff::RiffChunk;
 use crate::vp8::decode_size_vp8_from_header;
 use crate::vp8::VP8Kind;
-use crate::{Error, Result};
+use crate::{Error, ImageICC, Result};
 
 pub const CHUNK_ALPH: [u8; 4] = [b'A', b'L', b'P', b'H'];
 pub const CHUNK_ANIM: [u8; 4] = [b'A', b'N', b'I', b'M'];
@@ -202,6 +202,13 @@ impl WebP {
         };
 
         Ok(())
+    }
+}
+
+impl ImageICC for WebP {
+    fn icc_profile(&self) -> Option<Vec<u8>> {
+        self.chunk_by_id(CHUNK_ICCP)
+            .map(|chunk| chunk.contents().to_vec())
     }
 }
 
