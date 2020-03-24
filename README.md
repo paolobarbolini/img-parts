@@ -3,7 +3,27 @@
 [![CI](https://github.com/paolobarbolini/icc-editor/workflows/CI/badge.svg)](https://github.com/paolobarbolini/icc-editor/actions?query=workflow%3ACI)
 [![Rustc Version 1.34.2+](https://img.shields.io/badge/rustc-1.34.2+-lightgray.svg)](https://blog.rust-lang.org/2019/04/11/Rust-1.34.0.html)
 
-A WIP crate for accessing and editing the ICC profile in images
+The `icc-editor` crate provides a low level api for reading and
+writing containers from various image formats.
+
+It currently supports Jpeg and WebP.
+
+With it you can read an image, modify its sections and save it
+back.
+
+```rust,ignore
+use icc_editor::jpeg::Jpeg;
+use icc_editor::ImageICC;
+
+let input = File::open("img.jpg")?;
+let output = File::create("out.jpg")?;
+
+let mut jpeg = Jpeg::read(&mut BufReader::new(input))?;
+let icc_profile = jpeg.icc_profile();
+
+jpeg.set_icc_profile(Some(another_icc_profile));
+jpeg.write_to(&mut BufWriter::new(output))?;
+```
 
 ## License
 
