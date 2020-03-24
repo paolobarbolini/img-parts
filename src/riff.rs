@@ -33,8 +33,8 @@ impl RiffChunk {
         Ok(RiffChunk::new(id, contents))
     }
 
-    pub fn id(&self) -> &[u8] {
-        &self.id
+    pub fn id(&self) -> [u8; 4] {
+        self.id
     }
 
     pub fn contents(&self) -> &[u8] {
