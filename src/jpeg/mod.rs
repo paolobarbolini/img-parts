@@ -1,3 +1,4 @@
+pub use self::entropy::Entropy;
 pub use self::image::Jpeg;
 pub use self::segment::JpegSegment;
 

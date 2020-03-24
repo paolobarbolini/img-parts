@@ -4,42 +4,57 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 
 use super::markers;
 
-pub fn read_entropy(r: &mut dyn Read) -> Result<Vec<u8>> {
-    let mut entropy = Vec::new();
-
-    loop {
-        let byte = r.read_u8()?;
-        if byte != markers::P {
-            entropy.push(byte);
-            continue;
-        }
-
-        let marker_byte = r.read_u8()?;
-        match marker_byte {
-            markers::EOI => {
-                return Ok(entropy);
-            }
-            markers::Z => entropy.push(byte),
-            _ => {
-                entropy.push(byte);
-                entropy.push(marker_byte);
-            }
-        }
-    }
+pub struct Entropy {
+    data: Vec<u8>,
+    markers: Vec<usize>,
 }
 
-pub fn write_entropy(entropy: &[u8], w: &mut dyn Write) -> Result<()> {
-    for byte in entropy {
-        w.write_u8(*byte)?;
+impl Entropy {
+    pub fn read(r: &mut dyn Read) -> Result<Entropy> {
+        let mut pos = 0;
+        let mut data = Vec::new();
+        let mut markers = Vec::new();
 
-        if *byte == markers::P {
-            w.write_u8(markers::Z)?;
+        loop {
+            let byte = r.read_u8()?;
+            if byte != markers::P {
+                pos += 1;
+                data.push(byte);
+                continue;
+            }
+
+            let marker_byte = r.read_u8()?;
+            match marker_byte {
+                markers::EOI => {
+                    return Ok(Entropy { data, markers });
+                }
+                markers::Z => {
+                    pos += 1;
+                    data.push(byte)
+                }
+                _ => {
+                    markers.push(pos);
+                    data.push(byte);
+                    data.push(marker_byte);
+                    pos += 2;
+                }
+            }
         }
     }
 
-    w.write_u8(markers::P)?;
-    w.write_u8(markers::EOI)?;
-    Ok(())
+    pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
+        for (pos, byte) in self.data.iter().enumerate() {
+            w.write_u8(*byte)?;
+
+            if *byte == markers::P && !self.markers.contains(&pos) {
+                w.write_u8(markers::Z)?;
+            }
+        }
+
+        w.write_u8(markers::P)?;
+        w.write_u8(markers::EOI)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -49,23 +64,28 @@ mod tests {
     #[test]
     fn test_read_entropy() {
         let input: &[u8] = &[
-            0xE2, 0x51, 0xE7, 0xFF, 0x00, 0xAA, 0xFD, 0xFF, 0x00, 0xCA, 0xFF, 0xD9,
+            0xE2, 0xFF, 0xE2, 0x51, 0xE7, 0xFF, 0x00, 0xAA, 0xFD, 0xFF, 0x00, 0xCA, 0xFF, 0xD9,
         ];
-        let expected: &[u8] = &[0xE2, 0x51, 0xE7, 0xFF, 0xAA, 0xFD, 0xFF, 0xCA];
+        let expected_data: &[u8] = &[0xE2, 0xFF, 0xE2, 0x51, 0xE7, 0xFF, 0xAA, 0xFD, 0xFF, 0xCA];
+        let expected_markers: &[usize] = &[1];
 
-        let output = read_entropy(&mut &input[..]).expect("read_entropy");
-        assert_eq!(output.as_slice(), expected);
+        let output = Entropy::read(&mut &input[..]).expect("read_entropy");
+        assert_eq!(output.data.as_slice(), expected_data);
+        assert_eq!(output.markers.as_slice(), expected_markers);
     }
 
     #[test]
     fn test_write_entropy() {
-        let input: &[u8] = &[0xE2, 0x51, 0xE7, 0xFF, 0xAA, 0xFD, 0xFF, 0xCA];
+        let data = vec![0xE2, 0xFF, 0xE2, 0x51, 0xE7, 0xFF, 0xAA, 0xFD, 0xFF, 0xCA];
+        let markers = vec![1];
         let expected: &[u8] = &[
-            0xE2, 0x51, 0xE7, 0xFF, 0x00, 0xAA, 0xFD, 0xFF, 0x00, 0xCA, 0xFF, 0xD9,
+            0xE2, 0xFF, 0xE2, 0x51, 0xE7, 0xFF, 0x00, 0xAA, 0xFD, 0xFF, 0x00, 0xCA, 0xFF, 0xD9,
         ];
 
+        let entropy = Entropy { data, markers };
+
         let mut output = Vec::new();
-        write_entropy(input, &mut output).expect("write_entropy");
+        entropy.write_to(&mut output).expect("write_entropy");
         assert_eq!(output.as_slice(), expected);
     }
 }

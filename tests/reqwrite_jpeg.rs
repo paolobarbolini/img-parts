@@ -19,8 +19,7 @@ fn reqwrite_jpeg_adobergb() {
 
 #[test]
 fn reqwrite_jpeg_plane() {
-    // TODO: entropy breaks when it contains markers
-    //extract_jpeg_image("P1133897.plane.jpg");
+    extract_jpeg_image("P1133897.plane.jpg");
 }
 
 fn extract_jpeg_image(input: &str) {

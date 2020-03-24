@@ -3,14 +3,14 @@ use std::io::{self, Read, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-use super::entropy::{read_entropy, write_entropy};
+use super::entropy::Entropy;
 use super::markers::{self, has_entropy, has_length};
 use crate::Result;
 
 pub struct JpegSegment {
     marker: u8,
     contents: Vec<u8>,
-    entropy_data: Option<Vec<u8>>,
+    entropy: Option<Entropy>,
 }
 
 impl JpegSegment {
@@ -19,7 +19,7 @@ impl JpegSegment {
         JpegSegment {
             marker,
             contents: Vec::new(),
-            entropy_data: None,
+            entropy: None,
         }
     }
 
@@ -28,16 +28,16 @@ impl JpegSegment {
         JpegSegment {
             marker,
             contents,
-            entropy_data: None,
+            entropy: None,
         }
     }
 
     #[inline]
-    pub fn new_with_entropy(marker: u8, contents: Vec<u8>, entropy: Vec<u8>) -> JpegSegment {
+    pub fn new_with_entropy(marker: u8, contents: Vec<u8>, entropy: Entropy) -> JpegSegment {
         JpegSegment {
             marker,
             contents,
-            entropy_data: Some(entropy),
+            entropy: Some(entropy),
         }
     }
 
@@ -50,7 +50,7 @@ impl JpegSegment {
         if !has_entropy(marker) {
             Ok(JpegSegment::new_with_contents(marker, contents))
         } else {
-            let entropy = read_entropy(r)?;
+            let entropy = Entropy::read(r)?;
             Ok(JpegSegment::new_with_entropy(marker, contents, entropy))
         }
     }
@@ -77,7 +77,7 @@ impl JpegSegment {
 
     #[inline]
     pub fn has_entropy(&self) -> bool {
-        self.entropy_data.is_some()
+        self.entropy.is_some()
     }
 
     pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
@@ -86,8 +86,8 @@ impl JpegSegment {
         w.write_u16::<BigEndian>((self.size() - 2).try_into().unwrap())?;
         w.write_all(&self.contents)?;
 
-        if let Some(entropy) = &self.entropy_data {
-            write_entropy(entropy, w)?;
+        if let Some(entropy) = &self.entropy {
+            entropy.write_to(w)?;
         }
 
         Ok(())
