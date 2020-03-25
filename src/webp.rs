@@ -1,9 +1,8 @@
-use std::convert::{TryFrom, TryInto};
 use std::io::{Read, Write};
 
-use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
+use byteorder::{ByteOrder, LittleEndian};
 
-use crate::riff::RiffChunk;
+use crate::riff::{RiffChunk, RiffContent};
 use crate::vp8::decode_size_vp8_from_header;
 use crate::vp8::VP8Kind;
 use crate::{Error, ImageICC, Result};
@@ -15,14 +14,12 @@ pub const CHUNK_EXIF: [u8; 4] = [b'E', b'X', b'I', b'F'];
 pub const CHUNK_ICCP: [u8; 4] = [b'I', b'C', b'C', b'P'];
 pub const CHUNK_VP8: [u8; 4] = [b'V', b'P', b'8', b' '];
 pub const CHUNK_VP8L: [u8; 4] = [b'V', b'P', b'8', b'L'];
+pub const CHUNK_VP8X: [u8; 4] = [b'V', b'P', b'8', b'X'];
 pub const CHUNK_XMP: [u8; 4] = [b'X', b'M', b'P', b' '];
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WebP {
-    kind: VP8Kind,
-    flags: WebPFlags,
-    vp8x_canvas: Option<(u32, u32)>,
-    chunks: Vec<RiffChunk>,
+    riff: RiffChunk,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -30,88 +27,132 @@ pub struct WebPFlags([u8; 4]);
 
 impl WebP {
     pub fn read(r: &mut dyn Read) -> Result<WebP> {
-        let mut buf = [0u8; 16];
-        r.read_exact(&mut buf[0..16])?;
+        WebP::read_with_limits(r, u32::max_value())
+    }
 
-        if &buf[0..4] != b"RIFF" {
-            return Err(Error::NoRiffHeader);
-        }
+    pub fn read_with_limits(r: &mut dyn Read, limit: u32) -> Result<WebP> {
+        let riff = RiffChunk::read_with_limits(r, limit)?;
 
-        let len = LittleEndian::read_u32(&buf[4..8]) + 8;
-
-        if &buf[8..12] != b"WEBP" {
-            return Err(Error::NoWebpCC);
-        }
-
-        let kind = VP8Kind::from_bytes(&buf[12..16])
-            .ok_or_else(|| Error::InvalidFormat(buf[12..16].try_into().unwrap()))?;
-        match kind {
-            VP8Kind::VP8 => {
-                let id = buf[12..16].try_into().unwrap();
-                let chunk = RiffChunk::read_skipping_id(r, id)?;
-
-                Ok(WebP {
-                    kind,
-                    flags: WebPFlags::default(),
-                    vp8x_canvas: None,
-                    chunks: vec![chunk],
-                })
-            }
-            VP8Kind::VP8L => unimplemented!(),
-            VP8Kind::VP8X => {
-                // size: 32 bits, flags: 32 bits, canvas width: 24 bits, canvas height: 24 bits
-                r.read_exact(&mut buf[0..14])?;
-
-                let flags = WebPFlags(buf[4..8].try_into().unwrap());
-                let width = LittleEndian::read_u24(&buf[8..11]) + 1;
-                let height = LittleEndian::read_u24(&buf[11..14]) + 1;
-
-                let mut chunks = Vec::new();
-                let mut read = 15;
-                while (read + 16) < len {
-                    let chunk = RiffChunk::read(r)?;
-                    read += chunk.size() as u32;
-                    chunks.push(chunk);
+        match riff.content().list() {
+            Some((kind, _)) => {
+                if kind == &Some(*b"WEBP") {
+                    Ok(WebP { riff })
+                } else {
+                    Err(Error::NoWebpCC)
                 }
-
-                Ok(WebP {
-                    kind,
-                    flags,
-                    vp8x_canvas: Some((width, height)),
-                    chunks,
-                })
             }
+            None => Err(Error::NoWebpCC),
         }
     }
 
     #[inline]
     pub fn kind(&self) -> VP8Kind {
-        self.kind
+        if self.has_chunk(CHUNK_VP8X) {
+            VP8Kind::VP8X
+        } else if self.has_chunk(CHUNK_VP8L) {
+            VP8Kind::VP8L
+        } else {
+            VP8Kind::VP8
+        }
+    }
+
+    fn infer_kind(&self) -> VP8Kind {
+        if self.has_chunk(CHUNK_ICCP) | self.has_chunk(CHUNK_EXIF) {
+            VP8Kind::VP8X
+        } else {
+            // TODO: VP8L
+            VP8Kind::VP8
+        }
+    }
+
+    fn convert_into_infered_kind(&mut self) {
+        let current_kind = self.kind();
+        let correct_kind = self.infer_kind();
+
+        if current_kind == correct_kind {
+            if correct_kind == VP8Kind::VP8X {
+                // TODO: update flags in the VP8X chunk
+            }
+        } else if correct_kind == VP8Kind::VP8 {
+            self.remove_chunks_by_id(CHUNK_VP8X);
+        } else if correct_kind == VP8Kind::VP8X {
+            // TODO VP8L
+
+            let pos = self
+                .chunks()
+                .iter()
+                .position(|chunk| chunk.id() == CHUNK_ICCP)
+                .unwrap_or(0);
+
+            let (width, height) = self.dimensions().unwrap();
+
+            let flags = WebPFlags::from_webp(self);
+            let mut content = Vec::with_capacity(10);
+            content.extend(&flags.0);
+
+            let mut buf = [0u8; 3];
+            LittleEndian::write_u24(&mut buf, width - 1);
+            content.extend(&buf);
+            LittleEndian::write_u24(&mut buf, height - 1);
+            content.extend(&buf);
+
+            let chunk = RiffChunk::new(CHUNK_VP8X, RiffContent::Data(content));
+            self.chunks_mut().insert(pos, chunk);
+        }
     }
 
     #[inline]
     pub fn dimensions(&self) -> Option<(u32, u32)> {
-        self.vp8x_canvas
+        if let Ok(vp8x) = self.chunk_by_id(CHUNK_VP8X) {
+            if let Some(data) = vp8x.content().data() {
+                if let Some(range) = data.get(2..8) {
+                    let width = LittleEndian::read_u24(&range[0..3]) + 1;
+                    let height = LittleEndian::read_u24(&range[3..6]) + 1;
+                    return Some((width, height));
+                }
+            }
+        }
+
+        if let Ok(vp8) = self.chunk_by_id(CHUNK_VP8) {
+            let (width, height) = decode_size_vp8_from_header(vp8.content().data()?);
+            return Some((width as u32, height as u32));
+        }
+
+        None
     }
 
-    #[inline]
-    pub fn chunks(&self) -> &[RiffChunk] {
-        self.chunks.as_slice()
+    pub fn chunks(&self) -> &Vec<RiffChunk> {
+        match self.riff.content() {
+            RiffContent::List { subchunks, .. } => subchunks,
+            _ => unreachable!(),
+        }
     }
 
-    #[inline]
     pub fn chunks_mut(&mut self) -> &mut Vec<RiffChunk> {
-        &mut self.chunks
+        match self.riff.content_mut() {
+            RiffContent::List {
+                ref mut subchunks, ..
+            } => subchunks,
+            _ => unreachable!(),
+        }
     }
 
     #[inline]
-    pub fn chunk_by_id(&self, id: [u8; 4]) -> Option<&RiffChunk> {
-        self.chunks.iter().find(|chunk| chunk.id() == id)
+    pub fn has_chunk(&self, id: [u8; 4]) -> bool {
+        self.chunk_by_id(id).is_ok()
+    }
+
+    #[inline]
+    pub fn chunk_by_id(&self, id: [u8; 4]) -> Result<&RiffChunk> {
+        self.chunks()
+            .iter()
+            .find(|chunk| chunk.id() == id)
+            .ok_or_else(|| Error::NoChunk(id))
     }
 
     #[inline]
     pub fn chunks_by_id(&self, id: [u8; 4]) -> Vec<&RiffChunk> {
-        self.chunks
+        self.chunks()
             .iter()
             .filter(|chunk| chunk.id() == id)
             .collect()
@@ -119,119 +160,66 @@ impl WebP {
 
     #[inline]
     pub fn remove_chunks_by_id(&mut self, id: [u8; 4]) {
-        self.chunks.retain(|chunk| chunk.id() != id);
+        self.chunks_mut().retain(|chunk| chunk.id() != id);
     }
 
     #[inline]
-    pub fn size(&self) -> Result<usize> {
-        self.size_with_kind(self.kind)
+    pub fn encoded_size(&self) -> u32 {
+        self.riff.encoded_size()
     }
 
-    fn size_with_kind(&self, kind: VP8Kind) -> Result<usize> {
-        // 12 bytes (header) + 4 bytes (kind)
-        let mut len = 12 + 4;
-
-        match kind {
-            VP8Kind::VP8 => {
-                len += self
-                    .chunk_by_id(CHUNK_VP8)
-                    .ok_or_else(|| Error::NoChunk(CHUNK_VP8))?
-                    .size()
-            }
-            VP8Kind::VP8L => unimplemented!(),
-            VP8Kind::VP8X => {
-                // 4 bytes (Chunk Size) + 4 bytes (Flags) + 6 bytes (Canvas size)
-                len += 4 + 4 + 6;
-
-                // Sum of the length of every chunk
-                len += self.chunks.iter().map(|chunk| chunk.size()).sum::<usize>();
-            }
-        };
-
-        Ok(len)
-    }
-
-    fn suggested_kind(&self) -> VP8Kind {
-        let has_non_vp8_chunks = self
-            .chunks
-            .iter()
-            .any(|chunk| VP8Kind::from_bytes(&chunk.id()).is_some());
-
-        if has_non_vp8_chunks {
-            VP8Kind::VP8X
-        } else {
-            VP8Kind::VP8
-        }
-    }
-
+    #[inline]
     pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
-        let kind = self.suggested_kind();
-        let len = self.size_with_kind(kind)?;
-
-        // WebP file header
-        w.write_all(b"RIFF")?;
-        w.write_u32::<LittleEndian>(u32::try_from(len - 8).unwrap())?;
-        w.write_all(b"WEBP")?;
-
-        match kind {
-            VP8Kind::VP8 => {
-                let vp8 = self
-                    .chunk_by_id(CHUNK_VP8)
-                    .ok_or_else(|| Error::NoChunk(CHUNK_VP8))?;
-                vp8.write_to(w)?;
-            }
-            VP8Kind::VP8L => unimplemented!(),
-            VP8Kind::VP8X => {
-                // ChunkHeader
-                w.write_all(&kind.to_bytes())?;
-
-                // Chunk Size
-                w.write_u32::<LittleEndian>(10)?;
-
-                // Flags: 32 bits
-                w.write_all(&self.flags.0)?;
-
-                // Canvas: 24 bit + 24 bit
-                if let Some((width, height)) = self.vp8x_canvas {
-                    w.write_u24::<LittleEndian>(width - 1)?;
-                    w.write_u24::<LittleEndian>(height - 1)?;
-                } else {
-                    let vp8 = self
-                        .chunk_by_id(CHUNK_VP8)
-                        .ok_or_else(|| Error::NoChunk(CHUNK_VP8))?;
-                    let (width, height) = decode_size_vp8_from_header(vp8.contents());
-                    w.write_u24::<LittleEndian>((width - 1).into())?;
-                    w.write_u24::<LittleEndian>((height - 1).into())?;
-                }
-
-                for chunk in &self.chunks {
-                    chunk.write_to(w)?;
-                }
-            }
-        };
-
-        Ok(())
+        self.riff.write_to(w)
     }
 }
 
 impl ImageICC for WebP {
     fn icc_profile(&self) -> Option<Vec<u8>> {
-        self.chunk_by_id(CHUNK_ICCP)
-            .map(|chunk| chunk.contents().to_vec())
+        self.chunk_by_id(CHUNK_ICCP).ok()?.content().data().cloned()
     }
 
     fn set_icc_profile(&mut self, profile: Option<Vec<u8>>) {
         self.remove_chunks_by_id(CHUNK_ICCP);
 
         if let Some(profile) = profile {
-            let chunk = RiffChunk::new(CHUNK_ICCP, profile);
-            self.chunks_mut().insert(0, chunk);
+            let kind = self.infer_kind();
+            let pos = match kind {
+                VP8Kind::VP8 => self
+                    .chunks()
+                    .iter()
+                    .position(|chunk| chunk.id() == CHUNK_VP8),
+                VP8Kind::VP8L | VP8Kind::VP8X => self
+                    .chunks()
+                    .iter()
+                    .position(|chunk| chunk.id() == CHUNK_VP8L || chunk.id() == CHUNK_VP8X)
+                    .map(|pos| pos + 1),
+            }
+            .unwrap_or(0);
+
+            let chunk = RiffChunk::new(CHUNK_ICCP, RiffContent::Data(profile));
+            self.chunks_mut().insert(pos, chunk);
         }
+
+        self.convert_into_infered_kind();
+    }
+}
+
+impl WebPFlags {
+    pub fn from_webp(webp: &WebP) -> WebPFlags {
+        let mut flags = WebPFlags::default();
+        if webp.has_chunk(CHUNK_ICCP) {
+            flags.0[0] |= 0b0010_0000;
+        }
+        if webp.has_chunk(CHUNK_EXIF) {
+            flags.0[0] |= 0b0000_1000;
+        }
+        flags
     }
 }
 
 impl Default for WebPFlags {
     fn default() -> Self {
-        Self([0x28, 0x00, 0x00, 0x00])
+        Self([0x00, 0x00, 0x00, 0x00])
     }
 }

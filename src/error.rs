@@ -6,11 +6,15 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     Io(io::Error),
 
+    LimitExcedeed,
+
     // jpeg
     FirstTwoBytesNotSOI,
 
-    // webp
+    // riff
     NoRiffHeader,
+
+    // webp
     NoWebpCC,
     NoChunk([u8; 4]),
     InvalidFormat([u8; 4]),
@@ -20,6 +24,8 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::Io(ref err) => err.fmt(f),
+
+            Error::LimitExcedeed => write!(f, "length exceeded the provided limit"),
 
             Error::FirstTwoBytesNotSOI => write!(f, "first two bytes is not a SOI marker"),
 

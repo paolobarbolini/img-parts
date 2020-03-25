@@ -1,7 +1,8 @@
 use std::fs::{self, File};
 use std::io::BufReader;
 
-use icc_editor::webp::{WebP, CHUNK_ICCP};
+use icc_editor::webp::WebP;
+use icc_editor::ImageICC;
 
 #[test]
 fn extract_webp_noprofile() {
@@ -23,13 +24,11 @@ fn extract_webp_image(input: &str, icc: Option<&str>) {
     let mut reader = BufReader::new(file);
 
     let webp = WebP::read(&mut reader).unwrap();
-    let iccp = webp.chunk_by_id(CHUNK_ICCP);
+    let iccp = webp.icc_profile();
 
     if let Some(icc) = icc {
-        let iccp = iccp.unwrap();
-
         let saved = fs::read(format!("tests/{}", icc)).expect("read icc");
-        assert_eq!(iccp.contents(), saved.as_slice());
+        assert_eq!(iccp, Some(saved));
     } else {
         assert!(iccp.is_none());
     }
