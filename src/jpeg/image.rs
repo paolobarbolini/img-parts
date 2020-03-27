@@ -121,14 +121,11 @@ impl ImageICC for Jpeg {
                 return None;
             }
 
-            println!("SEQNO: {}", seqno);
-
             let num = *contents.get(13)? as usize;
             if num != app2s_n {
                 // TODO: invalid number of markers
                 return None;
             }
-            println!("numnumnumnumnum: {}", num);
 
             let mut sequence = Vec::with_capacity(contents.len() - 14);
             sequence.extend(&contents[14..]);
