@@ -45,7 +45,6 @@ impl WebP {
         }
     }
 
-    #[inline]
     pub fn kind(&self) -> VP8Kind {
         if self.has_chunk(CHUNK_VP8X) {
             VP8Kind::VP8X
@@ -101,7 +100,6 @@ impl WebP {
         }
     }
 
-    #[inline]
     pub fn dimensions(&self) -> Option<(u32, u32)> {
         if let Ok(vp8x) = self.chunk_by_id(CHUNK_VP8X) {
             if let Some(data) = vp8x.content().data() {
@@ -137,12 +135,10 @@ impl WebP {
         }
     }
 
-    #[inline]
     pub fn has_chunk(&self, id: [u8; 4]) -> bool {
         self.chunk_by_id(id).is_ok()
     }
 
-    #[inline]
     pub fn chunk_by_id(&self, id: [u8; 4]) -> Result<&RiffChunk> {
         self.chunks()
             .iter()
@@ -150,7 +146,6 @@ impl WebP {
             .ok_or_else(|| Error::NoChunk(id))
     }
 
-    #[inline]
     pub fn chunks_by_id(&self, id: [u8; 4]) -> Vec<&RiffChunk> {
         self.chunks()
             .iter()
@@ -158,7 +153,6 @@ impl WebP {
             .collect()
     }
 
-    #[inline]
     pub fn remove_chunks_by_id(&mut self, id: [u8; 4]) {
         self.chunks_mut().retain(|chunk| chunk.id() != id);
     }

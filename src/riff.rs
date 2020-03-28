@@ -22,14 +22,17 @@ pub enum RiffContent {
 }
 
 impl RiffChunk {
+    #[inline]
     pub fn new(id: [u8; 4], content: RiffContent) -> RiffChunk {
         RiffChunk { id, content }
     }
 
+    #[inline]
     pub fn read(r: &mut dyn Read) -> Result<RiffChunk> {
         RiffChunk::read_with_limits(r, u32::max_value())
     }
 
+    #[inline]
     pub fn read_with_limits(r: &mut dyn Read, limit: u32) -> Result<RiffChunk> {
         RiffChunk::read_with_limits_(r, limit, true)
     }
@@ -59,14 +62,17 @@ impl RiffChunk {
         Ok(RiffChunk::new(id, content))
     }
 
+    #[inline]
     pub fn id(&self) -> [u8; 4] {
         self.id
     }
 
+    #[inline]
     pub fn content(&self) -> &RiffContent {
         &self.content
     }
 
+    #[inline]
     pub fn content_mut(&mut self) -> &mut RiffContent {
         &mut self.content
     }

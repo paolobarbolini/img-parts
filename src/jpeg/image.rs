@@ -70,14 +70,12 @@ impl Jpeg {
         &mut self.segments
     }
 
-    #[inline]
     pub fn component_by_marker(&self, marker: u8) -> Option<&JpegSegment> {
         self.segments
             .iter()
             .find(|segment| segment.marker() == marker)
     }
 
-    #[inline]
     pub fn components_by_marker(&self, marker: u8) -> Vec<&JpegSegment> {
         self.segments
             .iter()
