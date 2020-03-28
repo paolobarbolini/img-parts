@@ -15,6 +15,7 @@ pub struct JpegSegment {
     entropy: Option<Entropy>,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl JpegSegment {
     #[inline]
     pub fn new(marker: u8) -> JpegSegment {
@@ -57,7 +58,7 @@ impl JpegSegment {
         }
     }
 
-    pub fn size(&self) -> usize {
+    pub fn len(&self) -> usize {
         if has_length(self.marker) {
             // 2 bytes (marker) + 2 bytes (length) + length of the content
             2 + 2 + self.contents.len()
@@ -85,7 +86,7 @@ impl JpegSegment {
     pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
         w.write_u8(markers::P)?;
         w.write_u8(self.marker())?;
-        w.write_u16::<BigEndian>((self.size() - 2).try_into().unwrap())?;
+        w.write_u16::<BigEndian>((self.len() - 2).try_into().unwrap())?;
         w.write_all(&self.contents)?;
 
         if let Some(entropy) = &self.entropy {

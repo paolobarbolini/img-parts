@@ -25,6 +25,7 @@ pub struct WebP {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct WebPFlags([u8; 4]);
 
+#[allow(clippy::len_without_is_empty)]
 impl WebP {
     pub fn read(r: &mut dyn Read) -> Result<WebP> {
         WebP::read_with_limits(r, u32::max_value())
@@ -158,8 +159,8 @@ impl WebP {
     }
 
     #[inline]
-    pub fn encoded_size(&self) -> u32 {
-        self.riff.encoded_size()
+    pub fn len(&self) -> u32 {
+        self.riff.len()
     }
 
     #[inline]

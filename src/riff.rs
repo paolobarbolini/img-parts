@@ -21,6 +21,7 @@ pub enum RiffContent {
     Data(Vec<u8>),
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl RiffChunk {
     #[inline]
     pub fn new(id: [u8; 4], content: RiffContent) -> RiffChunk {
@@ -77,7 +78,7 @@ impl RiffChunk {
         &mut self.content
     }
 
-    pub fn encoded_size(&self) -> u32 {
+    pub fn len(&self) -> u32 {
         // FourCC (32 bit) + Size (32 bit) + Content
         let mut len = 4 + 4 + self.content.size();
 
@@ -117,7 +118,7 @@ impl RiffContent {
             let mut subchunks = Vec::new();
             while len > 0 {
                 let subchunk = RiffChunk::read_with_limits_(r, len, false)?;
-                len -= subchunk.encoded_size();
+                len -= subchunk.len();
                 subchunks.push(subchunk);
             }
 
@@ -143,10 +144,7 @@ impl RiffContent {
                     len += 4;
                 }
 
-                len += subchunks
-                    .iter()
-                    .map(|subchunk| subchunk.encoded_size())
-                    .sum::<u32>();
+                len += subchunks.iter().map(|subchunk| subchunk.len()).sum::<u32>();
                 len
             }
             RiffContent::Data(data) => data.len().try_into().unwrap(),
