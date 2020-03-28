@@ -14,6 +14,7 @@ pub struct Jpeg {
     segments: Vec<JpegSegment>,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl Jpeg {
     pub fn read(r: &mut dyn Read) -> Result<Jpeg> {
         let b0 = r.read_u8()?;
@@ -81,6 +82,15 @@ impl Jpeg {
             .iter()
             .filter(|segment| segment.marker() == marker)
             .collect()
+    }
+
+    pub fn len(&self) -> usize {
+        // SOI marker (2 bytes) + length of every segment including entropy
+        2 + self
+            .segments
+            .iter()
+            .map(|segment| segment.len_with_entropy())
+            .sum::<usize>()
     }
 
     pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {

@@ -68,6 +68,15 @@ impl JpegSegment {
         }
     }
 
+    pub fn len_with_entropy(&self) -> usize {
+        self.len()
+            + self
+                .entropy
+                .as_ref()
+                .map(|entropy| entropy.len())
+                .unwrap_or(0)
+    }
+
     #[inline]
     pub fn marker(&self) -> u8 {
         self.marker

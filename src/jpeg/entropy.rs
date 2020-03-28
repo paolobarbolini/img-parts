@@ -10,6 +10,7 @@ pub struct Entropy {
     markers: Vec<usize>,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl Entropy {
     pub fn read(r: &mut dyn Read) -> Result<Entropy> {
         let mut pos = 0;
@@ -43,6 +44,11 @@ impl Entropy {
         }
     }
 
+    pub fn len(&self) -> usize {
+        // data + # byte stuffing bytes + EOI marker (2 bytes)
+        self.data.len() + bytecount::count(&self.data, markers::P) - self.markers.len() + 2
+    }
+
     pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
         for (pos, byte) in self.data.iter().enumerate() {
             w.write_u8(*byte)?;
@@ -71,6 +77,7 @@ mod tests {
         let expected_markers: &[usize] = &[1];
 
         let output = Entropy::read(&mut &input[..]).expect("read_entropy");
+        assert_eq!(output.len(), input.len());
         assert_eq!(output.data.as_slice(), expected_data);
         assert_eq!(output.markers.as_slice(), expected_markers);
     }
@@ -87,6 +94,7 @@ mod tests {
 
         let mut output = Vec::new();
         entropy.write_to(&mut output).expect("write_entropy");
+        assert_eq!(entropy.len(), expected.len());
         assert_eq!(output.as_slice(), expected);
     }
 }
