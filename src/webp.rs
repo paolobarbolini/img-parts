@@ -258,7 +258,7 @@ impl ImageICC for WebP {
 }
 
 impl WebPFlags {
-    pub fn from_webp(webp: &WebP) -> WebPFlags {
+    fn from_webp(webp: &WebP) -> WebPFlags {
         let mut flags = WebPFlags::default();
         if webp.has_chunk(CHUNK_ICCP) {
             flags.0[0] |= 0b0010_0000;
