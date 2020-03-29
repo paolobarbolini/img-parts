@@ -23,7 +23,7 @@ pub struct WebP {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct WebPFlags([u8; 4]);
+struct WebPFlags([u8; 4]);
 
 #[allow(clippy::len_without_is_empty)]
 impl WebP {
