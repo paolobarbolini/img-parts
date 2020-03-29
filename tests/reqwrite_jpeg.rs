@@ -23,7 +23,7 @@ fn reqwrite_jpeg_plane() {
 }
 
 fn extract_jpeg_image(input: &str) {
-    let file = fs::read(format!("tests/{}", input)).expect("read jpeg");
+    let file = fs::read(format!("tests/images/{}", input)).expect("read jpeg");
 
     let jpeg = Jpeg::read(&mut &file[..]).unwrap();
 

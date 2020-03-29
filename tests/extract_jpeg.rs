@@ -25,7 +25,7 @@ fn extract_jpeg_plane() {
 }
 
 fn extract_jpeg_image(input: &str, icc: Option<&str>) {
-    let file = File::open(format!("tests/{}", input)).expect("open jpeg");
+    let file = File::open(format!("tests/images/{}", input)).expect("open jpeg");
     let mut reader = BufReader::new(file);
 
     let jpeg = Jpeg::read(&mut reader).unwrap();
@@ -34,7 +34,7 @@ fn extract_jpeg_image(input: &str, icc: Option<&str>) {
     if let Some(icc) = icc {
         let iccp = iccp.unwrap();
 
-        let saved = fs::read(format!("tests/{}", icc)).expect("read icc");
+        let saved = fs::read(format!("tests/images/{}", icc)).expect("read icc");
         assert_eq!(iccp, saved.as_slice());
     } else {
         assert!(iccp.is_none());

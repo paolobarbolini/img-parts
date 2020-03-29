@@ -23,7 +23,7 @@ fn reqwrite_webp_out() {
 }
 
 fn extract_webp_image(input: &str) {
-    let file = fs::read(format!("tests/{}", input)).expect("read webp");
+    let file = fs::read(format!("tests/images/{}", input)).expect("read webp");
 
     let webp = WebP::read(&mut &file[..]).unwrap();
 
