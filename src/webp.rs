@@ -63,7 +63,7 @@ impl WebP {
     ///
     /// `limit` is the maximum amount of bytes it will be allowed to read.
     /// If a field specifies a length bigger than the remaining `limit` an
-    /// [`Error::LimitExcedeed`][crate::Error::LimitExcedeed] error will be
+    /// [`Error::LimitExceeded`][crate::Error::LimitExceeded] error will be
     /// returned.
     ///
     /// # Errors

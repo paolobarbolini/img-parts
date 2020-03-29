@@ -46,7 +46,7 @@ impl RiffChunk {
     ///
     /// `limit` is the maximum amount of bytes it will be allowed to read.
     /// If a field specifies a length bigger than the remaining `limit` an
-    /// [`Error::LimitExcedeed`][crate::Error::LimitExcedeed] error will be
+    /// [`Error::LimitExceeded`][crate::Error::LimitExceeded] error will be
     /// returned.
     ///
     /// # Errors
@@ -131,7 +131,7 @@ impl RiffContent {
     fn read_with_limits(r: &mut dyn Read, id: [u8; 4], limit: u32) -> Result<RiffContent> {
         let mut len = r.read_u32::<LittleEndian>()?;
         if len > limit {
-            return Err(Error::LimitExcedeed);
+            return Err(Error::LimitExceeded);
         }
 
         if has_subchunks(id) {
