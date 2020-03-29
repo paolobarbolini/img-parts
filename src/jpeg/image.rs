@@ -71,13 +71,13 @@ impl Jpeg {
         &mut self.segments
     }
 
-    pub fn component_by_marker(&self, marker: u8) -> Option<&JpegSegment> {
+    pub fn segment_by_marker(&self, marker: u8) -> Option<&JpegSegment> {
         self.segments
             .iter()
             .find(|segment| segment.marker() == marker)
     }
 
-    pub fn components_by_marker(&self, marker: u8) -> Vec<&JpegSegment> {
+    pub fn segments_by_marker(&self, marker: u8) -> Vec<&JpegSegment> {
         self.segments
             .iter()
             .filter(|segment| segment.marker() == marker)
@@ -107,7 +107,7 @@ impl Jpeg {
 
 impl ImageICC for Jpeg {
     fn icc_profile(&self) -> Option<Vec<u8>> {
-        let app2s = self.components_by_marker(markers::APP2);
+        let app2s = self.segments_by_marker(markers::APP2);
         if app2s.is_empty() {
             return None;
         }
