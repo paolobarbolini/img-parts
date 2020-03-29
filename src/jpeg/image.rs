@@ -10,6 +10,7 @@ const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 // max chunk size: u16::max_value() - segment size (2 byte) - segment meta (14 byte)
 const ICC_SEGMENT_MAX_SIZE: usize = 65535 - 2 - 14;
 
+/// The representation of a Jpeg image.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Jpeg {
     segments: Vec<JpegSegment>,
@@ -17,6 +18,12 @@ pub struct Jpeg {
 
 #[allow(clippy::len_without_is_empty)]
 impl Jpeg {
+    /// Create a new `Jpeg` image from a Reader.
+    ///
+    /// # Errors
+    ///
+    /// This method fails if reading fails or if the first two bytes
+    /// aren't a SOI marker.
     pub fn read(r: &mut dyn Read) -> Result<Jpeg> {
         let b0 = r.read_u8()?;
         let b1 = r.read_u8()?;
@@ -62,22 +69,26 @@ impl Jpeg {
         Ok(Jpeg { segments })
     }
 
+    /// Get the segments of this `Jpeg`.
     #[inline]
     pub fn segments(&self) -> &[JpegSegment] {
         self.segments.as_slice()
     }
 
+    /// Get the mutable reference of the segments of this `Jpeg`.
     #[inline]
     pub fn segments_mut(&mut self) -> &mut Vec<JpegSegment> {
         &mut self.segments
     }
 
+    /// Get the first segment with a marker of `marker`
     pub fn segment_by_marker(&self, marker: u8) -> Option<&JpegSegment> {
         self.segments
             .iter()
             .find(|segment| segment.marker() == marker)
     }
 
+    /// Get every segment with a marker of `marker`
     pub fn segments_by_marker(&self, marker: u8) -> Vec<&JpegSegment> {
         self.segments
             .iter()
@@ -85,6 +96,12 @@ impl Jpeg {
             .collect()
     }
 
+    /// Get the total size of the `Jpeg` once it is encoded.
+    ///
+    /// The size is the sum of:
+    ///
+    /// - The SOI marker (2 bytes).
+    /// - The size of every segment including the size of the encoded entropy.
     pub fn len(&self) -> usize {
         // SOI marker (2 bytes) + length of every segment including entropy
         2 + self
@@ -94,6 +111,7 @@ impl Jpeg {
             .sum::<usize>()
     }
 
+    /// Encode this `Jpeg` and write it to a Writer
     pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
         w.write_u8(markers::P)?;
         w.write_u8(markers::SOI)?;

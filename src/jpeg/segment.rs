@@ -8,6 +8,7 @@ use super::entropy::Entropy;
 use super::markers::{self, has_entropy, has_length};
 use crate::Result;
 
+/// The representation of a single segment composing a Jpeg image.
 #[derive(Clone, PartialEq)]
 pub struct JpegSegment {
     marker: u8,
@@ -17,6 +18,7 @@ pub struct JpegSegment {
 
 #[allow(clippy::len_without_is_empty)]
 impl JpegSegment {
+    /// Construct an empty `JpegSegment`.
     #[inline]
     pub fn new(marker: u8) -> JpegSegment {
         JpegSegment {
@@ -26,6 +28,7 @@ impl JpegSegment {
         }
     }
 
+    /// Construct a `JpegSegment` with `contents`.
     #[inline]
     pub fn new_with_contents(marker: u8, contents: Vec<u8>) -> JpegSegment {
         JpegSegment {
@@ -35,6 +38,7 @@ impl JpegSegment {
         }
     }
 
+    /// Construct a `JpegSegment` with `contents` and `Etropy`.
     #[inline]
     pub fn new_with_entropy(marker: u8, contents: Vec<u8>, entropy: Entropy) -> JpegSegment {
         JpegSegment {
@@ -44,6 +48,7 @@ impl JpegSegment {
         }
     }
 
+    /// Create a `JpegSegment` with a length from a Reader.
     pub fn read(marker: u8, r: &mut dyn Read) -> Result<JpegSegment> {
         let size = r.read_u16::<BigEndian>()? - 2;
 
@@ -58,6 +63,14 @@ impl JpegSegment {
         }
     }
 
+    /// Get the size of this `JpegSegment` once it is encoded excluding
+    /// the `Entropy`.
+    ///
+    /// The size is the sum of:
+    ///
+    /// - The marker (2 bytes).
+    /// - The length (2 bytes) if this marker has a length.
+    /// - The size of the content.
     pub fn len(&self) -> usize {
         if has_length(self.marker) {
             // 2 bytes (marker) + 2 bytes (length) + length of the content
@@ -68,6 +81,15 @@ impl JpegSegment {
         }
     }
 
+    /// Get the size of this `JpegSegment` once it is encoded including
+    /// the `Entropy`.
+    ///
+    /// The size is the sum of:
+    ///
+    /// - The marker (2 bytes).
+    /// - The length (2 bytes) if this marker has a length.
+    /// - The size of the content.
+    /// - The size of the encoded entropy data.
     pub fn len_with_entropy(&self) -> usize {
         self.len()
             + self
@@ -77,21 +99,25 @@ impl JpegSegment {
                 .unwrap_or(0)
     }
 
+    /// Get the second byte of the marker if this `JpegSegment`.
     #[inline]
     pub fn marker(&self) -> u8 {
         self.marker
     }
 
+    /// Get the content of this `JpegSegment`.
     #[inline]
     pub fn contents(&self) -> &[u8] {
         self.contents.as_slice()
     }
 
+    /// Check if this `JpegSegment` has entropy.
     #[inline]
     pub fn has_entropy(&self) -> bool {
         self.entropy.is_some()
     }
 
+    /// Encode this `JpegSegment` and write it to a Writer.
     pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
         w.write_u8(markers::P)?;
         w.write_u8(self.marker())?;

@@ -2,22 +2,25 @@ use std::{fmt, io};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// The Errors that may occur when processing an image.
 #[derive(Debug)]
 pub enum Error {
+    /// An error occurred while interacting with a Reader or a Writer
     Io(io::Error),
 
+    /// Completing the operation would have required exceeding the `limit`
     LimitExcedeed,
 
-    // jpeg
+    /// The first two bytes of the `Jpeg` weren't a SOI marker
     FirstTwoBytesNotSOI,
 
-    // riff
+    /// The first chunk of a RIFF had an id different from "RIFF"
     NoRiffHeader,
 
-    // webp
+    /// The first chunk in the contents of a RIFF had an id different from "WEBP"
     NoWebpCC,
+    /// A chunk of id `id` wasn't found.
     NoChunk([u8; 4]),
-    InvalidFormat([u8; 4]),
 }
 
 impl fmt::Display for Error {
@@ -32,7 +35,6 @@ impl fmt::Display for Error {
             Error::NoRiffHeader => write!(f, "no riff header"),
             Error::NoWebpCC => write!(f, "no webp cc"),
             Error::NoChunk(id) => write!(f, "no chunk of id: {:X?}", id),
-            Error::InvalidFormat(format) => write!(f, "invalid format: {:X?}", format),
         }
     }
 }

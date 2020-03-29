@@ -6,12 +6,14 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::{Error, Result};
 
+/// The representation of a RIFF chunk
 #[derive(Clone, PartialEq)]
 pub struct RiffChunk {
     id: [u8; 4],
     content: RiffContent,
 }
 
+// The data inside of a RIFF chunk
 #[derive(Clone, PartialEq)]
 pub enum RiffContent {
     List {
@@ -23,16 +25,34 @@ pub enum RiffContent {
 
 #[allow(clippy::len_without_is_empty)]
 impl RiffChunk {
+    /// Construct a new RIFF chunk.
     #[inline]
     pub fn new(id: [u8; 4], content: RiffContent) -> RiffChunk {
         RiffChunk { id, content }
     }
 
+    /// Create a new `RiffChunk` from a Reader.
+    ///
+    /// # Errors
+    ///
+    /// This method fails if reading fails or if the first chunk doesn't have
+    /// an id of "RIFF"
     #[inline]
     pub fn read(r: &mut dyn Read) -> Result<RiffChunk> {
         RiffChunk::read_with_limits(r, u32::max_value())
     }
 
+    /// Create a new `RiffChunk` file from a Reader.
+    ///
+    /// `limit` is the maximum amount of bytes it will be willing to read.
+    /// If a field specifies a size bigger than the remaining `limit` an
+    /// [`Error::LimitExcedeed`][crate::Error::LimitExcedeed] error will be
+    /// returned.
+    ///
+    /// # Errors
+    ///
+    /// This method fails if reading fails, if the first chunk doesn't have
+    /// an id of "RIFF" or if the `limit` if exceeded.
     #[inline]
     pub fn read_with_limits(r: &mut dyn Read, limit: u32) -> Result<RiffChunk> {
         RiffChunk::read_with_limits_(r, limit, true)
@@ -63,24 +83,33 @@ impl RiffChunk {
         Ok(RiffChunk::new(id, content))
     }
 
+    /// Get the id of this `RiffChunk`
     #[inline]
     pub fn id(&self) -> [u8; 4] {
         self.id
     }
 
+    /// Get the content of this `RiffChunk`
     #[inline]
     pub fn content(&self) -> &RiffContent {
         &self.content
     }
 
+    /// Get the mutable reference of the content of this `RiffChunk`
     #[inline]
     pub fn content_mut(&mut self) -> &mut RiffContent {
         &mut self.content
     }
 
+    /// Get the total size of this `RiffChunk` once it is encoded.
+    ///
+    /// The size is the sum of:
+    ///
+    /// - The chunk id (4 bytes).
+    /// - The size field (4 bytes).
+    /// - The size of the content + a single padding byte if the size is odd.
     pub fn len(&self) -> u32 {
-        // FourCC (32 bit) + Size (32 bit) + Content
-        let mut len = 4 + 4 + self.content.size();
+        let mut len = 4 + 4 + self.content.len();
 
         if len % 2 != 0 {
             len += 1;
@@ -89,13 +118,15 @@ impl RiffChunk {
         len
     }
 
+    /// Encode this `RiffChunk` and write it to a Writer.
     pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
         w.write_all(&self.id)?;
-        w.write_u32::<LittleEndian>(self.content.size().try_into().unwrap())?;
+        w.write_u32::<LittleEndian>(self.content.len().try_into().unwrap())?;
         self.content.write_to(w)
     }
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl RiffContent {
     fn read_with_limits(r: &mut dyn Read, id: [u8; 4], limit: u32) -> Result<RiffContent> {
         let mut len = r.read_u32::<LittleEndian>()?;
@@ -135,7 +166,15 @@ impl RiffContent {
         }
     }
 
-    pub fn size(&self) -> u32 {
+    /// Get the total size of this `RiffContent` once it is encoded.
+    ///
+    /// If this `RiffContent` is a `List` the size is the sum of:
+    ///
+    /// - The kind (4 bytes) if this `List` has one.
+    /// - The sum of the size of every `subchunk`.
+    ///
+    /// If this `RiffContent` is `Data` the size is the length of the data.
+    pub fn len(&self) -> u32 {
         match self {
             RiffContent::List { kind, subchunks } => {
                 let mut len = 0;
@@ -151,6 +190,9 @@ impl RiffContent {
         }
     }
 
+    /// Get `kind` and `subchunks` of this `RiffContent` if it is a `List`.
+    ///
+    /// Returns `None` if it is `Data`.
     pub fn list(&self) -> Option<(&Option<[u8; 4]>, &Vec<RiffChunk>)> {
         match self {
             RiffContent::List {
@@ -161,6 +203,9 @@ impl RiffContent {
         }
     }
 
+    /// Get the `data` of this `RiffContent` if it is `Data`.
+    ///
+    /// Returns `None` if it is a `List`.
     pub fn data(&self) -> Option<&Vec<u8>> {
         match self {
             RiffContent::List { .. } => None,
@@ -168,6 +213,7 @@ impl RiffContent {
         }
     }
 
+    /// Encode this `RiffContent` and write it to a Writer.
     pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
         match self {
             RiffContent::List { kind, subchunks } => {

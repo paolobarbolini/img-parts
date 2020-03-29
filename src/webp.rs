@@ -17,6 +17,7 @@ pub const CHUNK_VP8L: [u8; 4] = [b'V', b'P', b'8', b'L'];
 pub const CHUNK_VP8X: [u8; 4] = [b'V', b'P', b'8', b'X'];
 pub const CHUNK_XMP: [u8; 4] = [b'X', b'M', b'P', b' '];
 
+/// The representation of a WebP image.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WebP {
     riff: RiffChunk,
@@ -27,6 +28,13 @@ struct WebPFlags([u8; 4]);
 
 #[allow(clippy::len_without_is_empty)]
 impl WebP {
+    /// Construct a new `WebP` image from a [`RiffChunk`][crate::riff::RiffChunk].
+    ///
+    /// # Errors
+    ///
+    /// This method returns a [`Error::NoWebpCC`][crate::Error::NoWebpCC] if the
+    /// content of the [`RiffChunk`][crate::riff::RiffChunk] isn't a `List` or
+    /// if the list's kind isn't "WEBP".
     pub fn new(riff: RiffChunk) -> Result<WebP> {
         match riff.content().list() {
             Some((kind, _)) => {
@@ -40,16 +48,35 @@ impl WebP {
         }
     }
 
+    /// Create a new `WebP` image from a Reader.
+    ///
+    /// # Errors
+    ///
+    /// This method fails if reading fails, if the first chunk doesn't have
+    /// an id of "RIFF" or if the content kind of the first chunk isn't "WEBP".
     #[inline]
     pub fn read(r: &mut dyn Read) -> Result<WebP> {
         WebP::read_with_limits(r, u32::max_value())
     }
 
+    /// Create a new `WebP` image from a Reader.
+    ///
+    /// `limit` is the maximum amount of bytes it will be willing to read.
+    /// If a field specifies a size bigger than the remaining `limit` an
+    /// [`Error::LimitExcedeed`][crate::Error::LimitExcedeed] error will be
+    /// returned.
+    ///
+    /// # Errors
+    ///
+    /// This method fails if reading fails, if the first chunk doesn't have
+    /// an id of "RIFF", if the content kind of the first chunk isn't "WEBP"
+    /// or if the `limit` if exceeded.
     pub fn read_with_limits(r: &mut dyn Read, limit: u32) -> Result<WebP> {
         let riff = RiffChunk::read_with_limits(r, limit)?;
         WebP::new(riff)
     }
 
+    /// Get the `VP8Kind` of this `WebP`.
     pub fn kind(&self) -> VP8Kind {
         if self.has_chunk(CHUNK_VP8X) {
             VP8Kind::VP8X
@@ -105,6 +132,12 @@ impl WebP {
         }
     }
 
+    /// Get the width and height of this `WebP`.
+    ///
+    /// If the `VP8Kind` is [`VP8Kind`][crate::vp8::VP8Kind] is `VP8X` the size
+    /// is read from the canvas size in the VP8X chunk.
+    ///
+    /// Otherwise the size is read from the VP8 bitstream header.
     pub fn dimensions(&self) -> Option<(u32, u32)> {
         if let Ok(vp8x) = self.chunk_by_id(CHUNK_VP8X) {
             if let Some(data) = vp8x.content().data() {
@@ -124,6 +157,7 @@ impl WebP {
         None
     }
 
+    /// Get the chunks of this `WebP`.
     pub fn chunks(&self) -> &Vec<RiffChunk> {
         match self.riff.content() {
             RiffContent::List { subchunks, .. } => subchunks,
@@ -131,6 +165,7 @@ impl WebP {
         }
     }
 
+    /// Get the mutable reference of the chunks of this `WebP`.
     pub fn chunks_mut(&mut self) -> &mut Vec<RiffChunk> {
         match self.riff.content_mut() {
             RiffContent::List {
@@ -140,10 +175,18 @@ impl WebP {
         }
     }
 
+    /// Check if there's a chunk with an id of `id`.
+    #[inline]
     pub fn has_chunk(&self, id: [u8; 4]) -> bool {
         self.chunk_by_id(id).is_ok()
     }
 
+    /// Get a first chunk with an id of `id`.
+    ///
+    /// # Errors
+    ///
+    /// This method fails with [`Error::NoChunk`][crate::Error::NoChunk]
+    /// if a chunk with an id of `id` isn't found.
     pub fn chunk_by_id(&self, id: [u8; 4]) -> Result<&RiffChunk> {
         self.chunks()
             .iter()
@@ -151,6 +194,7 @@ impl WebP {
             .ok_or_else(|| Error::NoChunk(id))
     }
 
+    /// Get every chunks with an id of `id`.
     pub fn chunks_by_id(&self, id: [u8; 4]) -> Vec<&RiffChunk> {
         self.chunks()
             .iter()
@@ -158,15 +202,24 @@ impl WebP {
             .collect()
     }
 
+    /// Remove every chunk if an id of `id`
     pub fn remove_chunks_by_id(&mut self, id: [u8; 4]) {
         self.chunks_mut().retain(|chunk| chunk.id() != id);
     }
 
+    /// Get the total size of the `WebP` once it is encoded.
+    ///
+    /// Calls [`RiffChunk::len`][crate::riff::RiffChunk::len] on the
+    /// inner `RiffChunk`
     #[inline]
     pub fn len(&self) -> u32 {
         self.riff.len()
     }
 
+    /// Encode this `WebP` and write it to a Writer
+    ///
+    /// Calls [`RiffChunk::write_to`][crate::riff::RiffChunk::write_to] on the
+    /// inner `RiffChunk`
     #[inline]
     pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
         self.riff.write_to(w)
