@@ -42,10 +42,10 @@ impl RiffChunk {
         RiffChunk::read_with_limits(r, u32::max_value())
     }
 
-    /// Create a new `RiffChunk` file from a Reader.
+    /// Create a new `RiffChunk` from a Reader.
     ///
-    /// `limit` is the maximum amount of bytes it will be willing to read.
-    /// If a field specifies a size bigger than the remaining `limit` an
+    /// `limit` is the maximum amount of bytes it will be allowed to read.
+    /// If a field specifies a length bigger than the remaining `limit` an
     /// [`Error::LimitExcedeed`][crate::Error::LimitExcedeed] error will be
     /// returned.
     ///
@@ -95,7 +95,7 @@ impl RiffChunk {
         &self.content
     }
 
-    /// Get the mutable reference of the content of this `RiffChunk`
+    /// Get a mutable reference to the content of this `RiffChunk`
     #[inline]
     pub fn content_mut(&mut self) -> &mut RiffContent {
         &mut self.content
@@ -170,7 +170,7 @@ impl RiffContent {
     ///
     /// If this `RiffContent` is a `List` the size is the sum of:
     ///
-    /// - The kind (4 bytes) if this `List` has one.
+    /// - The kind (4 bytes) if this `List` has a kind.
     /// - The sum of the size of every `subchunk`.
     ///
     /// If this `RiffContent` is `Data` the size is the length of the data.

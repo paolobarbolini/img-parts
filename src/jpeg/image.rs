@@ -75,7 +75,7 @@ impl Jpeg {
         &self.segments
     }
 
-    /// Get the mutable reference of the segments of this `Jpeg`.
+    /// Get a mutable reference to the segments of this `Jpeg`.
     #[inline]
     pub fn segments_mut(&mut self) -> &mut Vec<JpegSegment> {
         &mut self.segments

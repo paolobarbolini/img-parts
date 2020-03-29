@@ -61,8 +61,8 @@ impl WebP {
 
     /// Create a new `WebP` image from a Reader.
     ///
-    /// `limit` is the maximum amount of bytes it will be willing to read.
-    /// If a field specifies a size bigger than the remaining `limit` an
+    /// `limit` is the maximum amount of bytes it will be allowed to read.
+    /// If a field specifies a length bigger than the remaining `limit` an
     /// [`Error::LimitExcedeed`][crate::Error::LimitExcedeed] error will be
     /// returned.
     ///
@@ -134,7 +134,7 @@ impl WebP {
 
     /// Get the width and height of this `WebP`.
     ///
-    /// If the `VP8Kind` is [`VP8Kind`][crate::vp8::VP8Kind] is `VP8X` the size
+    /// If the `VP8Kind` is [`VP8Kind::VP8X`][crate::vp8::VP8Kind::VP8X] the size
     /// is read from the canvas size in the VP8X chunk.
     ///
     /// Otherwise the size is read from the VP8 bitstream header.
@@ -165,7 +165,7 @@ impl WebP {
         }
     }
 
-    /// Get the mutable reference of the chunks of this `WebP`.
+    /// Get a mutable reference to the chunks of this `WebP`.
     pub fn chunks_mut(&mut self) -> &mut Vec<RiffChunk> {
         match self.riff.content_mut() {
             RiffContent::List {
@@ -181,7 +181,7 @@ impl WebP {
         self.chunk_by_id(id).is_ok()
     }
 
-    /// Get a first chunk with an id of `id`.
+    /// Get the first chunk with an id of `id`.
     ///
     /// # Errors
     ///
@@ -194,7 +194,7 @@ impl WebP {
             .ok_or_else(|| Error::NoChunk(id))
     }
 
-    /// Get every chunks with an id of `id`.
+    /// Get every chunk with an id of `id`.
     pub fn chunks_by_id(&self, id: [u8; 4]) -> Vec<&RiffChunk> {
         self.chunks()
             .iter()
@@ -209,7 +209,7 @@ impl WebP {
 
     /// Get the total size of the `WebP` once it is encoded.
     ///
-    /// Calls [`RiffChunk::len`][crate::riff::RiffChunk::len] on the
+    /// Internally calls [`RiffChunk::len`][crate::riff::RiffChunk::len] on the
     /// inner `RiffChunk`
     #[inline]
     pub fn len(&self) -> u32 {
@@ -218,7 +218,7 @@ impl WebP {
 
     /// Encode this `WebP` and write it to a Writer
     ///
-    /// Calls [`RiffChunk::write_to`][crate::riff::RiffChunk::write_to] on the
+    /// Internally calls [`RiffChunk::write_to`][crate::riff::RiffChunk::write_to] on the
     /// inner `RiffChunk`
     #[inline]
     pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
