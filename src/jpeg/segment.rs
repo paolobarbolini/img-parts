@@ -99,7 +99,7 @@ impl JpegSegment {
                 .unwrap_or(0)
     }
 
-    /// Get the second byte of the marker if this `JpegSegment`.
+    /// Get the second byte of the marker of this `JpegSegment`.
     #[inline]
     pub fn marker(&self) -> u8 {
         self.marker
