@@ -13,7 +13,7 @@ pub struct RiffChunk {
     content: RiffContent,
 }
 
-// The data inside of a RIFF chunk
+// The contents of a RIFF chunk
 #[derive(Clone, PartialEq)]
 pub enum RiffContent {
     List {
