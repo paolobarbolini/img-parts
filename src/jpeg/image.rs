@@ -167,7 +167,7 @@ impl ImageICC for Jpeg {
                 let end = std::cmp::min(profile.len(), start + ICC_SEGMENT_MAX_SIZE);
                 let len = end - start;
 
-                let mut contents = Vec::with_capacity(len);
+                let mut contents = Vec::with_capacity(len + 16);
                 contents.extend(ICC_DATA_PREFIX);
                 contents.push(i as u8 + 1);
                 contents.push(segments_n as u8);
