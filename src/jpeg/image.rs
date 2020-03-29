@@ -71,8 +71,8 @@ impl Jpeg {
 
     /// Get the segments of this `Jpeg`.
     #[inline]
-    pub fn segments(&self) -> &[JpegSegment] {
-        self.segments.as_slice()
+    pub fn segments(&self) -> &Vec<JpegSegment> {
+        &self.segments
     }
 
     /// Get the mutable reference of the segments of this `Jpeg`.
