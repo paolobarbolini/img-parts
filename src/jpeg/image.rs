@@ -6,6 +6,7 @@ use super::markers;
 use super::JpegSegment;
 use crate::{Error, ImageICC, Result};
 
+const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 // max chunk size: u16::max_value() - segment size (2 byte) - segment meta (14 byte)
 const ICC_SEGMENT_MAX_SIZE: usize = 65535 - 2 - 14;
 
@@ -118,7 +119,7 @@ impl ImageICC for Jpeg {
         let mut sequences = Vec::with_capacity(app2s_n);
         for app2 in app2s {
             let contents = app2.contents();
-            if contents.get(0..12) != Some(b"ICC_PROFILE\0") {
+            if contents.get(0..12) != Some(ICC_DATA_PREFIX) {
                 app2s_n -= 1;
                 continue;
             }
@@ -156,7 +157,7 @@ impl ImageICC for Jpeg {
     fn set_icc_profile(&mut self, profile: Option<Vec<u8>>) {
         self.segments.retain(|segment| {
             segment.marker() != markers::APP2
-                || segment.contents().get(0..12) != Some(b"ICC_PROFILE\0")
+                || segment.contents().get(0..12) != Some(ICC_DATA_PREFIX)
         });
 
         if let Some(profile) = profile {
@@ -167,7 +168,7 @@ impl ImageICC for Jpeg {
                 let len = end - start;
 
                 let mut contents = Vec::with_capacity(len);
-                contents.extend(b"ICC_PROFILE\0");
+                contents.extend(ICC_DATA_PREFIX);
                 contents.push(i as u8 + 1);
                 contents.push(segments_n as u8);
                 contents.extend(profile.get(start..end).unwrap());
