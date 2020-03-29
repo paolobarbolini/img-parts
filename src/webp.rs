@@ -27,13 +27,7 @@ struct WebPFlags([u8; 4]);
 
 #[allow(clippy::len_without_is_empty)]
 impl WebP {
-    pub fn read(r: &mut dyn Read) -> Result<WebP> {
-        WebP::read_with_limits(r, u32::max_value())
-    }
-
-    pub fn read_with_limits(r: &mut dyn Read, limit: u32) -> Result<WebP> {
-        let riff = RiffChunk::read_with_limits(r, limit)?;
-
+    pub fn new(riff: RiffChunk) -> Result<WebP> {
         match riff.content().list() {
             Some((kind, _)) => {
                 if kind == &Some(*b"WEBP") {
@@ -44,6 +38,16 @@ impl WebP {
             }
             None => Err(Error::NoWebpCC),
         }
+    }
+
+    #[inline]
+    pub fn read(r: &mut dyn Read) -> Result<WebP> {
+        WebP::read_with_limits(r, u32::max_value())
+    }
+
+    pub fn read_with_limits(r: &mut dyn Read, limit: u32) -> Result<WebP> {
+        let riff = RiffChunk::read_with_limits(r, limit)?;
+        WebP::new(riff)
     }
 
     pub fn kind(&self) -> VP8Kind {
