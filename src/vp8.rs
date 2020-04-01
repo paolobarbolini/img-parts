@@ -11,7 +11,7 @@ pub enum VP8Kind {
 }
 
 // the first 10 bytes are necessary
-pub(crate) fn decode_size_vp8_from_header(b: &[u8]) -> (u16, u16) {
+pub(crate) fn size_from_vp8_header(b: &[u8]) -> (u16, u16) {
     let tag = LittleEndian::read_u24(&b[0..3]);
 
     let keyframe = tag & 1 == 0;

@@ -3,7 +3,7 @@ use std::io::{Read, Write};
 use byteorder::{ByteOrder, LittleEndian};
 
 use crate::riff::{RiffChunk, RiffContent};
-use crate::vp8::decode_size_vp8_from_header;
+use crate::vp8::size_from_vp8_header;
 use crate::vp8::VP8Kind;
 use crate::{Error, ImageICC, Result};
 
@@ -150,7 +150,7 @@ impl WebP {
         }
 
         if let Ok(vp8) = self.chunk_by_id(CHUNK_VP8) {
-            let (width, height) = decode_size_vp8_from_header(vp8.content().data()?);
+            let (width, height) = size_from_vp8_header(vp8.content().data()?);
             return Some((width as u32, height as u32));
         }
 
