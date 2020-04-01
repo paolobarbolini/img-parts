@@ -202,7 +202,7 @@ impl WebP {
             .collect()
     }
 
-    /// Remove every chunk if an id of `id`
+    /// Remove every chunk with an id of `id`
     pub fn remove_chunks_by_id(&mut self, id: [u8; 4]) {
         self.chunks_mut().retain(|chunk| chunk.id() != id);
     }
