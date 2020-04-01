@@ -12,7 +12,7 @@ pub struct Entropy {
 
 #[allow(clippy::len_without_is_empty)]
 impl Entropy {
-    pub fn read(r: &mut dyn Read) -> Result<Entropy> {
+    pub(crate) fn read(r: &mut dyn Read) -> Result<Entropy> {
         let mut pos = 0;
         let mut data = Vec::new();
         let mut markers = Vec::new();
@@ -49,7 +49,7 @@ impl Entropy {
         self.data.len() + bytecount::count(&self.data, markers::P) - self.markers.len() + 2
     }
 
-    pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
+    pub(crate) fn write_to(&self, w: &mut dyn Write) -> Result<()> {
         for (pos, byte) in self.data.iter().enumerate() {
             w.write_u8(*byte)?;
 
