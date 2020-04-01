@@ -87,7 +87,7 @@ pub const JPG13: u8 = 0xFD;
 // Comment
 pub const COM: u8 = 0xFE;
 
-pub fn has_length(marker: u8) -> bool {
+pub(crate) fn has_length(marker: u8) -> bool {
     match marker {
         RST0..=RST7 => true,
         APP0..=APP15 => true,
@@ -99,7 +99,7 @@ pub fn has_length(marker: u8) -> bool {
     }
 }
 
-pub fn has_entropy(marker: u8) -> bool {
+pub(crate) fn has_entropy(marker: u8) -> bool {
     match marker {
         SOS => true,
         _ => false,
