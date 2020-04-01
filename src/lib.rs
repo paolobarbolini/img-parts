@@ -1,3 +1,5 @@
+#![doc(html_root_url = "https://docs.rs/img-parts/0.1.0")]
+
 //! # img-parts
 //!
 //! The `img-parts` crate provides a low level api for reading and

@@ -1,10 +1,22 @@
 [package]
 name = "img-parts"
-version = "0.0.0"
+version = "0.1.0" # remember to update html_root_url
 authors = ["Paolo Barbolini <paolo@paolo565.org>"]
+description = "Low level crate for reading and writing Jpeg and RIFF image containers"
 license = "MIT/Apache-2.0"
+repository = "https://github.com/paolobarbolini/img-parts"
+categories = ["multimedia::images", "multimedia::encoding", "parser-implementations"]
+keywords = ["jpeg", "riff", "webp", "parser", "reader", "metadata", "container", "icc"]
+readme = "README.md"
 edition = "2018"
+
+exclude = [
+    "tests/",
+]
 
 [dependencies]
 byteorder = "1.1.0"
 bytecount = "0.6.0"
+
+[package.metadata.docs.rs]
+targets = []
