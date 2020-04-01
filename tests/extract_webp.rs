@@ -1,8 +1,8 @@
 use std::fs::{self, File};
 use std::io::BufReader;
 
-use icc_editor::webp::WebP;
-use icc_editor::ImageICC;
+use img_parts::webp::WebP;
+use img_parts::ImageICC;
 
 #[test]
 fn extract_webp_noprofile() {

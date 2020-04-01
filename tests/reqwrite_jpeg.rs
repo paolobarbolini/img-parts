@@ -1,6 +1,6 @@
 use std::fs;
 
-use icc_editor::jpeg::Jpeg;
+use img_parts::jpeg::Jpeg;
 
 #[test]
 fn reqwrite_jpeg_noprofile() {

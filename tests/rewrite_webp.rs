@@ -1,6 +1,6 @@
 use std::fs;
 
-use icc_editor::webp::WebP;
+use img_parts::webp::WebP;
 
 #[test]
 fn reqwrite_webp_noprofile() {

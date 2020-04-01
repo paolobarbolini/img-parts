@@ -1,9 +1,9 @@
-# icc-editor
+# img-parts
 
-[![CI](https://github.com/paolobarbolini/icc-editor/workflows/CI/badge.svg)](https://github.com/paolobarbolini/icc-editor/actions?query=workflow%3ACI)
+[![CI](https://github.com/paolobarbolini/img-parts/workflows/CI/badge.svg)](https://github.com/paolobarbolini/img-parts/actions?query=workflow%3ACI)
 [![Rustc Version 1.34.2+](https://img.shields.io/badge/rustc-1.34.2+-lightgray.svg)](https://blog.rust-lang.org/2019/04/11/Rust-1.34.0.html)
 
-The `icc-editor` crate provides a low level api for reading and
+The `img-parts` crate provides a low level api for reading and
 writing containers from various image formats.
 
 It currently supports `Jpeg` and `RIFF` (with some helper functions
@@ -13,8 +13,8 @@ With it you can read an image, modify its sections and save it
 back.
 
 ```rust,ignore
-use icc_editor::jpeg::Jpeg;
-use icc_editor::ImageICC;
+use img_parts::jpeg::Jpeg;
+use img_parts::ImageICC;
 
 let input = File::open("img.jpg")?;
 let output = File::create("out.jpg")?;

@@ -1,7 +1,7 @@
 use std::fs;
 
-use icc_editor::jpeg::Jpeg;
-use icc_editor::ImageICC;
+use img_parts::jpeg::Jpeg;
+use img_parts::ImageICC;
 
 #[test]
 fn inject_jpeg_noop1() {

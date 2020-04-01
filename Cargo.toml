@@ -1,5 +1,5 @@
 [package]
-name = "icc-editor"
+name = "img-parts"
 version = "0.0.0"
 authors = ["Paolo Barbolini <paolo@paolo565.org>"]
 license = "MIT/Apache-2.0"

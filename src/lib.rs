@@ -1,6 +1,6 @@
-//! # icc-editor
+//! # img-parts
 //!
-//! The `icc-editor` crate provides a low level api for reading and
+//! The `img-parts` crate provides a low level api for reading and
 //! writing containers from various image formats.
 //!
 //! It currently supports [`Jpeg`][crate::jpeg::Jpeg] and
@@ -13,10 +13,10 @@
 //! ```rust,no_run
 //! # use std::fs::File;
 //! # use std::io::{BufReader, BufWriter};
-//! # use icc_editor::Result;
+//! # use img_parts::Result;
 //! # fn run() -> Result<()> {
-//! use icc_editor::jpeg::Jpeg;
-//! use icc_editor::ImageICC;
+//! use img_parts::jpeg::Jpeg;
+//! use img_parts::ImageICC;
 //!
 //! # let another_icc_profile = Vec::new();
 //! let input = File::open("img.jpg")?;

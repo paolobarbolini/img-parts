@@ -1,7 +1,7 @@
 use std::fs;
 
-use icc_editor::webp::WebP;
-use icc_editor::ImageICC;
+use img_parts::webp::WebP;
+use img_parts::ImageICC;
 
 #[test]
 fn inject_webp_noop1() {
