@@ -134,10 +134,9 @@ impl WebP {
 
     /// Get the width and height of this `WebP`.
     ///
-    /// If the `VP8Kind` is [`VP8Kind::VP8X`][crate::vp8::VP8Kind::VP8X] the size
-    /// is read from the canvas size in the VP8X chunk.
+    /// If this `WebP` has a `VP8X` chunk the dimension is the canvas size.
     ///
-    /// Otherwise the size is read from the VP8 bitstream header.
+    /// Otherwise the dimension is read from the VP8 bitstream header.
     pub fn dimensions(&self) -> Option<(u32, u32)> {
         if let Ok(vp8x) = self.chunk_by_id(CHUNK_VP8X) {
             if let Some(data) = vp8x.content().data() {
