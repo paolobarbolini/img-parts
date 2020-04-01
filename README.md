@@ -6,7 +6,8 @@
 The `icc-editor` crate provides a low level api for reading and
 writing containers from various image formats.
 
-It currently supports Jpeg and WebP.
+It currently supports `Jpeg` and `RIFF` (with some helper functions
+for `WebP`).
 
 With it you can read an image, modify its sections and save it
 back.

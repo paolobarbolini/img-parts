@@ -4,7 +4,8 @@
 //! writing containers from various image formats.
 //!
 //! It currently supports [`Jpeg`][crate::jpeg::Jpeg] and
-//! [`WebP`][crate::webp::WebP].
+//! [`RIFF`][crate::riff::RiffChunk] (with some helper functions
+//! for [`WebP`][crate::webp::WebP]).
 //!
 //! With it you can read an image, modify its sections and save it
 //! back.
