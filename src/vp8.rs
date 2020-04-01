@@ -2,8 +2,11 @@ use byteorder::{ByteOrder, LittleEndian};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum VP8Kind {
+    /// A WEBP image in Simple File Format (Lossy)
     VP8,
+    /// A WEBP image in Simple File Format (Lossless)
     VP8L,
+    /// A WEBP image in Extended File format
     VP8X,
 }
 
