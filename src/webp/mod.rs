@@ -6,6 +6,9 @@ use crate::riff::{RiffChunk, RiffContent};
 use crate::vp8::size_from_vp8_header;
 use crate::vp8::VP8Kind;
 use crate::{Error, ImageEXIF, ImageICC, Result, EXIF_DATA_PREFIX};
+use flags::WebPFlags;
+
+mod flags;
 
 pub const CHUNK_ALPH: [u8; 4] = [b'A', b'L', b'P', b'H'];
 pub const CHUNK_ANIM: [u8; 4] = [b'A', b'N', b'I', b'M'];
@@ -22,9 +25,6 @@ pub const CHUNK_XMP: [u8; 4] = [b'X', b'M', b'P', b' '];
 pub struct WebP {
     riff: RiffChunk,
 }
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-struct WebPFlags([u8; 4]);
 
 #[allow(clippy::len_without_is_empty)]
 impl WebP {
@@ -281,24 +281,5 @@ impl ImageEXIF for WebP {
         }
 
         self.convert_into_infered_kind();
-    }
-}
-
-impl WebPFlags {
-    fn from_webp(webp: &WebP) -> WebPFlags {
-        let mut flags = WebPFlags::default();
-        if webp.has_chunk(CHUNK_ICCP) {
-            flags.0[0] |= 0b0010_0000;
-        }
-        if webp.has_chunk(CHUNK_EXIF) {
-            flags.0[0] |= 0b0000_1000;
-        }
-        flags
-    }
-}
-
-impl Default for WebPFlags {
-    fn default() -> Self {
-        Self([0x00, 0x00, 0x00, 0x00])
     }
 }
