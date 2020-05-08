@@ -18,16 +18,19 @@
 //! # use img_parts::Result;
 //! # fn run() -> Result<()> {
 //! use img_parts::jpeg::Jpeg;
-//! use img_parts::ImageICC;
+//! use img_parts::{ImageEXIF, ImageICC};
 //!
 //! # let another_icc_profile = Vec::new();
+//! # let new_exif_metadata = Vec::new();
 //! let input = File::open("img.jpg")?;
 //! let output = File::create("out.jpg")?;
 //!
 //! let mut jpeg = Jpeg::read(&mut BufReader::new(input))?;
 //! let icc_profile = jpeg.icc_profile();
+//! let exif_metadata = jpeg.exif();
 //!
 //! jpeg.set_icc_profile(Some(another_icc_profile));
+//! jpeg.set_exif(Some(new_exif_metadata));
 //! jpeg.write_to(&mut BufWriter::new(output))?;
 //! # Ok(())
 //! # }
