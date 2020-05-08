@@ -33,11 +33,13 @@
 //! # }
 //! ```
 
-pub use common::ImageICC;
+pub use common::{ImageEXIF, ImageICC};
 pub use error::{Error, Result};
+pub(crate) use exif::EXIF_DATA_PREFIX;
 
 mod common;
 mod error;
+mod exif;
 pub mod jpeg;
 pub mod riff;
 pub mod vp8;

@@ -5,7 +5,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use crate::riff::{RiffChunk, RiffContent};
 use crate::vp8::size_from_vp8_header;
 use crate::vp8::VP8Kind;
-use crate::{Error, ImageICC, Result};
+use crate::{Error, ImageEXIF, ImageICC, Result, EXIF_DATA_PREFIX};
 
 pub const CHUNK_ALPH: [u8; 4] = [b'A', b'L', b'P', b'H'];
 pub const CHUNK_ANIM: [u8; 4] = [b'A', b'N', b'I', b'M'];
@@ -250,6 +250,34 @@ impl ImageICC for WebP {
 
             let chunk = RiffChunk::new(CHUNK_ICCP, RiffContent::Data(profile));
             self.chunks_mut().insert(pos, chunk);
+        }
+
+        self.convert_into_infered_kind();
+    }
+}
+
+impl ImageEXIF for WebP {
+    fn exif(&self) -> Option<Vec<u8>> {
+        let mut bytes = self
+            .chunk_by_id(CHUNK_EXIF)
+            .ok()?
+            .content()
+            .data()
+            .cloned()?;
+        bytes.drain(..6);
+        Some(bytes)
+    }
+
+    fn set_exif(&mut self, exif: Option<Vec<u8>>) {
+        self.remove_chunks_by_id(CHUNK_EXIF);
+
+        if let Some(exif) = exif {
+            let mut contents = Vec::with_capacity(6 + exif.len());
+            contents.extend(EXIF_DATA_PREFIX);
+            contents.extend(exif);
+
+            let chunk = RiffChunk::new(CHUNK_EXIF, RiffContent::Data(contents));
+            self.chunks_mut().push(chunk);
         }
 
         self.convert_into_infered_kind();

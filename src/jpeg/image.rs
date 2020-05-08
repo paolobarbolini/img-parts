@@ -4,7 +4,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 
 use super::markers;
 use super::JpegSegment;
-use crate::{Error, ImageICC, Result};
+use crate::{Error, ImageEXIF, ImageICC, Result, EXIF_DATA_PREFIX};
 
 const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 // max chunk size: u16::max_value() - segment size (2 byte) - segment meta (14 byte)
@@ -194,6 +194,41 @@ impl ImageICC for Jpeg {
                 let segment = JpegSegment::new_with_contents(markers::APP2, contents);
                 self.segments.insert(3, segment);
             }
+        }
+    }
+}
+
+impl ImageEXIF for Jpeg {
+    fn exif(&self) -> Option<Vec<u8>> {
+        let app1s = self.segments_by_marker(markers::APP1);
+
+        for app1 in app1s {
+            let contents = app1.contents();
+            if contents.get(..6) != Some(EXIF_DATA_PREFIX) {
+                continue;
+            }
+
+            let mut contents = contents.to_vec();
+            contents.drain(..6);
+            return Some(contents);
+        }
+
+        None
+    }
+
+    fn set_exif(&mut self, exif: Option<Vec<u8>>) {
+        self.segments_mut().retain(|segment| {
+            segment.marker() != markers::APP1
+                || segment.contents().get(0..12) != Some(EXIF_DATA_PREFIX)
+        });
+
+        if let Some(exif) = exif {
+            let mut contents = Vec::with_capacity(6 + exif.len());
+            contents.extend(EXIF_DATA_PREFIX);
+            contents.extend(exif);
+
+            let segment = JpegSegment::new_with_contents(markers::APP1, contents);
+            self.segments.insert(3, segment);
         }
     }
 }
