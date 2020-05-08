@@ -16,7 +16,6 @@ exclude = [
 
 [dependencies]
 byteorder = "1.1.0"
-bytecount = "0.6.0"
 
 [package.metadata.docs.rs]
 targets = []
