@@ -121,7 +121,7 @@ impl RiffChunk {
     /// Encode this `RiffChunk` and write it to a Writer.
     pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
         w.write_all(&self.id)?;
-        w.write_u32::<LittleEndian>(self.content.len().try_into().unwrap())?;
+        w.write_u32::<LittleEndian>(self.content.len())?;
         self.content.write_to(w)
     }
 }
