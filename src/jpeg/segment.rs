@@ -6,7 +6,9 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use super::entropy::Entropy;
 use super::markers::{self, has_entropy, has_length};
-use crate::Result;
+use crate::{Result, EXIF_DATA_PREFIX};
+
+const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 
 /// The representation of a single segment composing a Jpeg image.
 #[derive(Clone, PartialEq)]
@@ -46,6 +48,26 @@ impl JpegSegment {
             contents,
             entropy: Some(entropy),
         }
+    }
+
+    /// Creates an ICC `JpegSegment`
+    pub(super) fn new_icc(seqno: u8, num: u8, buf: &[u8]) -> JpegSegment {
+        let mut contents = Vec::with_capacity(ICC_DATA_PREFIX.len() + 2 + buf.len());
+        contents.extend(ICC_DATA_PREFIX);
+        contents.push(seqno);
+        contents.push(num);
+        contents.extend(buf);
+
+        JpegSegment::new_with_contents(markers::APP2, contents)
+    }
+
+    /// Creates an EXIF `JpegSegment`
+    pub(super) fn new_exif(buf: &[u8]) -> JpegSegment {
+        let mut contents = Vec::with_capacity(EXIF_DATA_PREFIX.len() + buf.len());
+        contents.extend(EXIF_DATA_PREFIX);
+        contents.extend(buf);
+
+        JpegSegment::new_with_contents(markers::APP1, contents)
     }
 
     /// Create a `JpegSegment` with a length from a Reader.
@@ -115,6 +137,35 @@ impl JpegSegment {
     #[inline]
     pub fn has_entropy(&self) -> bool {
         self.entropy.is_some()
+    }
+
+    /// Returns the ICC segment data if this `JpegSegment` is an ICC segment.
+    pub(super) fn icc(&self) -> Option<(u8, u8, &[u8])> {
+        if self.marker == markers::APP2
+            && self.contents.get(0..ICC_DATA_PREFIX.len()) == Some(ICC_DATA_PREFIX)
+        {
+            // sequence number (between 1 and N. of sequence numbers inclusive)
+            let seqno = *self.contents.get(12)?;
+            // number of sequences
+            let num = *self.contents.get(13)?;
+
+            let icc = self.contents.get(14..)?;
+
+            Some((seqno, num, icc))
+        } else {
+            None
+        }
+    }
+
+    /// Returns the EXIF segment data if this `JpegSegment` is an EXIF segment.
+    pub(super) fn exif(&self) -> Option<&[u8]> {
+        if self.marker == markers::APP1
+            && self.contents.get(..EXIF_DATA_PREFIX.len()) == Some(EXIF_DATA_PREFIX)
+        {
+            self.contents.get(EXIF_DATA_PREFIX.len()..)
+        } else {
+            None
+        }
     }
 
     /// Encode this `JpegSegment` and write it to a Writer.

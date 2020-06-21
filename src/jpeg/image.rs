@@ -4,9 +4,8 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 
 use super::markers;
 use super::JpegSegment;
-use crate::{Error, ImageEXIF, ImageICC, Result, EXIF_DATA_PREFIX};
+use crate::{Error, ImageEXIF, ImageICC, Result};
 
-const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 // max chunk size: u16::max_value() - segment size (2 byte) - segment meta (14 byte)
 const ICC_SEGMENT_MAX_SIZE: usize = 65535 - 2 - 14;
 
@@ -126,72 +125,38 @@ impl Jpeg {
 
 impl ImageICC for Jpeg {
     fn icc_profile(&self) -> Option<Vec<u8>> {
-        let app2s = self.segments_by_marker(markers::APP2);
-        if app2s.is_empty() {
+        let mut icc_parts: Vec<(u8, u8, &[u8])> = self
+            .segments
+            .iter()
+            .filter_map(|segment| segment.icc())
+            .collect();
+        if icc_parts.is_empty() {
             return None;
         }
 
-        let mut app2s_n = app2s.len();
+        // sort by seqno
+        icc_parts.sort_by(|a, b| a.0.cmp(&b.0));
 
-        let mut total_len = 0;
-        let mut sequences = Vec::with_capacity(app2s_n);
-        for app2 in app2s {
-            let contents = app2.contents();
-            if contents.get(0..12) != Some(ICC_DATA_PREFIX) {
-                app2s_n -= 1;
-                continue;
-            }
+        let len = icc_parts.iter().map(|part| part.2.len()).sum::<usize>();
+        let mut sequence = Vec::with_capacity(len);
 
-            let seqno = *contents.get(12)? as usize;
-            if seqno == 0 || seqno > app2s_n {
-                // TODO: invalid sequence number
-                return None;
-            }
-
-            let num = *contents.get(13)? as usize;
-            if num != app2s_n {
-                // TODO: invalid number of markers
-                return None;
-            }
-
-            let mut sequence = Vec::with_capacity(contents.len() - 14);
-            sequence.extend(&contents[14..]);
-
-            total_len += sequence.len();
-            sequences.insert(seqno - 1, sequence);
+        for part in icc_parts {
+            sequence.extend(part.2);
         }
 
-        if total_len == 0 {
-            return None;
-        }
-
-        let mut final_sequence = Vec::with_capacity(total_len);
-        for mut sequence in sequences {
-            final_sequence.append(&mut sequence);
-        }
-        Some(final_sequence)
+        Some(sequence)
     }
 
     fn set_icc_profile(&mut self, profile: Option<Vec<u8>>) {
-        self.segments.retain(|segment| {
-            segment.marker() != markers::APP2
-                || segment.contents().get(0..12) != Some(ICC_DATA_PREFIX)
-        });
+        self.segments.retain(|segment| segment.icc().is_none());
 
         if let Some(profile) = profile {
-            let segments_n = profile.len() / ICC_SEGMENT_MAX_SIZE + 1;
+            let segments_n = (profile.len() / ICC_SEGMENT_MAX_SIZE + 1) as u8;
             for i in 0..segments_n {
-                let start = ICC_SEGMENT_MAX_SIZE * i;
+                let start = ICC_SEGMENT_MAX_SIZE * i as usize;
                 let end = std::cmp::min(profile.len(), start + ICC_SEGMENT_MAX_SIZE);
-                let len = end - start;
 
-                let mut contents = Vec::with_capacity(len + 16);
-                contents.extend(ICC_DATA_PREFIX);
-                contents.push(i as u8 + 1);
-                contents.push(segments_n as u8);
-                contents.extend(profile.get(start..end).unwrap());
-
-                let segment = JpegSegment::new_with_contents(markers::APP2, contents);
+                let segment = JpegSegment::new_icc(i + 1, segments_n, &profile[start..end]);
                 self.segments.insert(3, segment);
             }
         }
@@ -200,34 +165,16 @@ impl ImageICC for Jpeg {
 
 impl ImageEXIF for Jpeg {
     fn exif(&self) -> Option<Vec<u8>> {
-        let app1s = self.segments_by_marker(markers::APP1);
-
-        for app1 in app1s {
-            let contents = app1.contents();
-            if contents.get(..6) != Some(EXIF_DATA_PREFIX) {
-                continue;
-            }
-
-            let mut contents = contents.to_vec();
-            contents.drain(..6);
-            return Some(contents);
-        }
-
-        None
+        self.segments
+            .iter()
+            .find_map(|segment| segment.exif().map(|buf| buf.to_vec()))
     }
 
     fn set_exif(&mut self, exif: Option<Vec<u8>>) {
-        self.segments_mut().retain(|segment| {
-            segment.marker() != markers::APP1
-                || segment.contents().get(0..12) != Some(EXIF_DATA_PREFIX)
-        });
+        self.segments.retain(|segment| segment.exif().is_none());
 
         if let Some(exif) = exif {
-            let mut contents = Vec::with_capacity(6 + exif.len());
-            contents.extend(EXIF_DATA_PREFIX);
-            contents.extend(exif);
-
-            let segment = JpegSegment::new_with_contents(markers::APP1, contents);
+            let segment = JpegSegment::new_exif(&exif);
             self.segments.insert(3, segment);
         }
     }
