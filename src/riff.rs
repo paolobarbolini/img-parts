@@ -1,8 +1,9 @@
 use std::convert::TryInto;
 use std::fmt;
-use std::io::{Read, Write};
+use std::io::Write;
 
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, WriteBytesExt};
+use bytes::{Buf, Bytes};
 
 use crate::{Error, Result};
 
@@ -20,7 +21,7 @@ pub enum RiffContent {
         kind: Option<[u8; 4]>,
         subchunks: Vec<RiffChunk>,
     },
-    Data(Vec<u8>),
+    Data(Bytes),
 }
 
 #[allow(clippy::len_without_is_empty)]
@@ -38,48 +39,19 @@ impl RiffChunk {
     /// This method fails if reading fails or if the first chunk doesn't have
     /// an id of "RIFF"
     #[inline]
-    pub fn read(r: &mut dyn Read) -> Result<RiffChunk> {
-        RiffChunk::read_with_limits(r, u32::max_value())
+    pub fn from_bytes(mut b: Bytes) -> Result<RiffChunk> {
+        RiffChunk::from_bytes_impl(&mut b, true)
     }
 
-    /// Create a new `RiffChunk` from a Reader.
-    ///
-    /// `limit` is the maximum amount of bytes it will be allowed to read.
-    /// If a field specifies a length bigger than the remaining `limit` an
-    /// [`Error::LimitExceeded`][crate::Error::LimitExceeded] error will be
-    /// returned.
-    ///
-    /// # Errors
-    ///
-    /// This method fails if reading fails, if the first chunk doesn't have
-    /// an id of "RIFF" or if the `limit` if exceeded.
-    #[inline]
-    pub fn read_with_limits(r: &mut dyn Read, limit: u32) -> Result<RiffChunk> {
-        RiffChunk::read_with_limits_(r, limit, true)
-    }
+    pub(crate) fn from_bytes_impl(b: &mut Bytes, check_riff_id: bool) -> Result<RiffChunk> {
+        let mut id = [0u8; 4];
+        b.copy_to_slice(&mut id);
 
-    pub(crate) fn read_with_limits_(
-        r: &mut dyn Read,
-        limit: u32,
-        check_riff_id: bool,
-    ) -> Result<RiffChunk> {
-        let mut id: [u8; 4] = [0; 4];
-        r.read_exact(&mut id)?;
-
-        RiffChunk::read_contents(r, id, limit - 2, check_riff_id)
-    }
-
-    pub(crate) fn read_contents(
-        r: &mut dyn Read,
-        id: [u8; 4],
-        limit: u32,
-        check_riff_id: bool,
-    ) -> Result<RiffChunk> {
         if check_riff_id && id != *b"RIFF" {
             return Err(Error::NoRiffHeader);
         }
 
-        let content = RiffContent::read_with_limits(r, id, limit)?;
+        let content = RiffContent::from_bytes(b, id)?;
         Ok(RiffChunk::new(id, content))
     }
 
@@ -111,9 +83,8 @@ impl RiffChunk {
     pub fn len(&self) -> u32 {
         let mut len = 4 + 4 + self.content.len();
 
-        if len % 2 != 0 {
-            len += 1;
-        }
+        // RIFF chunks with an uneven number of bytes have an extra 0x00 padding byte
+        len += len % 2;
 
         len
     }
@@ -128,18 +99,14 @@ impl RiffChunk {
 
 #[allow(clippy::len_without_is_empty)]
 impl RiffContent {
-    fn read_with_limits(r: &mut dyn Read, id: [u8; 4], limit: u32) -> Result<RiffContent> {
-        let mut len = r.read_u32::<LittleEndian>()?;
-        if len > limit {
-            return Err(Error::LimitExceeded);
-        }
+    fn from_bytes(b: &mut Bytes, id: [u8; 4]) -> Result<RiffContent> {
+        let len = b.get_u32_le();
+        let mut content = b.split_to(len as usize);
 
         if has_subchunks(id) {
             let kind = if has_kind(id) {
-                len -= 4;
-
                 let mut buf = [0u8; 4];
-                r.read_exact(&mut buf)?;
+                content.copy_to_slice(&mut buf);
 
                 Some(buf)
             } else {
@@ -147,20 +114,15 @@ impl RiffContent {
             };
 
             let mut subchunks = Vec::new();
-            while len > 0 {
-                let subchunk = RiffChunk::read_with_limits_(r, len, false)?;
-                len -= subchunk.len();
+            while !content.is_empty() {
+                let subchunk = RiffChunk::from_bytes_impl(&mut content, false)?;
                 subchunks.push(subchunk);
             }
 
             Ok(RiffContent::List { kind, subchunks })
         } else {
-            let mut content = Vec::with_capacity(len as usize);
-            r.take(len as u64).read_to_end(&mut content)?;
-
-            if len % 2 != 0 {
-                r.read_u8()?;
-            }
+            // RIFF chunks with an uneven number of bytes have an extra 0x00 padding byte
+            b.advance((len % 2) as usize);
 
             Ok(RiffContent::Data(content))
         }
@@ -206,10 +168,10 @@ impl RiffContent {
     /// Get the `data` of this `RiffContent` if it is `Data`.
     ///
     /// Returns `None` if it is a `List`.
-    pub fn data(&self) -> Option<&Vec<u8>> {
+    pub fn data(&self) -> Option<Bytes> {
         match self {
             RiffContent::List { .. } => None,
-            RiffContent::Data(data) => Some(data),
+            RiffContent::Data(data) => Some(data.clone()),
         }
     }
 

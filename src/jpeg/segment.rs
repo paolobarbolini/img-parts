@@ -1,11 +1,12 @@
 use std::convert::TryInto;
 use std::fmt;
-use std::io::{self, Read, Write};
+use std::io::{self, Write};
 
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{BigEndian, WriteBytesExt};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 
-use super::entropy::Entropy;
 use super::markers::{self, has_entropy, has_length};
+use super::ICC_PREFIX_SIZE;
 use crate::{Result, EXIF_DATA_PREFIX};
 
 const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
@@ -14,8 +15,8 @@ const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 #[derive(Clone, PartialEq)]
 pub struct JpegSegment {
     marker: u8,
-    contents: Vec<u8>,
-    entropy: Option<Entropy>,
+    contents: Bytes,
+    entropy: Option<Bytes>,
 }
 
 #[allow(clippy::len_without_is_empty)]
@@ -25,14 +26,14 @@ impl JpegSegment {
     pub fn new(marker: u8) -> JpegSegment {
         JpegSegment {
             marker,
-            contents: Vec::new(),
+            contents: Bytes::new(),
             entropy: None,
         }
     }
 
     /// Construct a `JpegSegment` with `contents`.
     #[inline]
-    pub fn new_with_contents(marker: u8, contents: Vec<u8>) -> JpegSegment {
+    pub fn new_with_contents(marker: u8, contents: Bytes) -> JpegSegment {
         JpegSegment {
             marker,
             contents,
@@ -42,7 +43,7 @@ impl JpegSegment {
 
     /// Construct a `JpegSegment` with `contents` and `Etropy`.
     #[inline]
-    pub fn new_with_entropy(marker: u8, contents: Vec<u8>, entropy: Entropy) -> JpegSegment {
+    pub fn new_with_entropy(marker: u8, contents: Bytes, entropy: Bytes) -> JpegSegment {
         JpegSegment {
             marker,
             contents,
@@ -51,37 +52,35 @@ impl JpegSegment {
     }
 
     /// Creates an ICC `JpegSegment`
-    pub(super) fn new_icc(seqno: u8, num: u8, buf: &[u8]) -> JpegSegment {
-        let mut contents = Vec::with_capacity(ICC_DATA_PREFIX.len() + 2 + buf.len());
-        contents.extend(ICC_DATA_PREFIX);
-        contents.push(seqno);
-        contents.push(num);
-        contents.extend(buf);
+    pub(super) fn new_icc(seqno: u8, num: u8, buf: Bytes) -> JpegSegment {
+        let mut contents = BytesMut::with_capacity(ICC_DATA_PREFIX.len() + 2 + buf.len());
+        contents.put(ICC_DATA_PREFIX);
+        contents.put_u8(seqno);
+        contents.put_u8(num);
+        contents.put(buf);
 
-        JpegSegment::new_with_contents(markers::APP2, contents)
+        JpegSegment::new_with_contents(markers::APP2, contents.freeze())
     }
 
     /// Creates an EXIF `JpegSegment`
-    pub(super) fn new_exif(buf: &[u8]) -> JpegSegment {
-        let mut contents = Vec::with_capacity(EXIF_DATA_PREFIX.len() + buf.len());
-        contents.extend(EXIF_DATA_PREFIX);
-        contents.extend(buf);
+    pub(super) fn new_exif(buf: Bytes) -> JpegSegment {
+        let mut contents = BytesMut::with_capacity(EXIF_DATA_PREFIX.len() + buf.len());
+        contents.put(EXIF_DATA_PREFIX);
+        contents.put(buf);
 
-        JpegSegment::new_with_contents(markers::APP1, contents)
+        JpegSegment::new_with_contents(markers::APP1, contents.freeze())
     }
 
     /// Create a `JpegSegment` with a length from a Reader.
-    pub fn read(marker: u8, r: &mut dyn Read) -> Result<JpegSegment> {
-        let size = r.read_u16::<BigEndian>()? - 2;
+    pub fn from_bytes(marker: u8, b: &mut Bytes) -> Result<JpegSegment> {
+        let size = b.get_u16() - 2;
 
-        let mut contents = Vec::with_capacity(size as usize);
-        r.take(size as u64).read_to_end(&mut contents)?;
+        let contents = b.split_to(size as usize);
 
         if !has_entropy(marker) {
             Ok(JpegSegment::new_with_contents(marker, contents))
         } else {
-            let entropy = Entropy::read(r)?;
-            Ok(JpegSegment::new_with_entropy(marker, contents, entropy))
+            Ok(JpegSegment::new_with_entropy(marker, contents, b.clone()))
         }
     }
 
@@ -129,8 +128,8 @@ impl JpegSegment {
 
     /// Get the content of this `JpegSegment`.
     #[inline]
-    pub fn contents(&self) -> &[u8] {
-        self.contents.as_slice()
+    pub fn contents(&self) -> &Bytes {
+        &self.contents
     }
 
     /// Check if this `JpegSegment` has entropy.
@@ -140,29 +139,37 @@ impl JpegSegment {
     }
 
     /// Returns the ICC segment data if this `JpegSegment` is an ICC segment.
-    pub(super) fn icc(&self) -> Option<(u8, u8, &[u8])> {
-        if self.marker == markers::APP2
-            && self.contents.get(0..ICC_DATA_PREFIX.len()) == Some(ICC_DATA_PREFIX)
-        {
+    pub(super) fn icc(&self) -> Option<(u8, u8, Bytes)> {
+        if self.contents.len() < ICC_PREFIX_SIZE {
+            return None;
+        }
+
+        let mut b = self.contents.clone();
+        let prefix = b.split_to(ICC_DATA_PREFIX.len());
+
+        if self.marker == markers::APP2 && prefix.bytes() == ICC_DATA_PREFIX {
             // sequence number (between 1 and N. of sequence numbers inclusive)
-            let seqno = *self.contents.get(12)?;
+            let seqno = b.get_u8();
             // number of sequences
-            let num = *self.contents.get(13)?;
+            let num = b.get_u8();
 
-            let icc = self.contents.get(14..)?;
-
-            Some((seqno, num, icc))
+            Some((seqno, num, b))
         } else {
             None
         }
     }
 
     /// Returns the EXIF segment data if this `JpegSegment` is an EXIF segment.
-    pub(super) fn exif(&self) -> Option<&[u8]> {
-        if self.marker == markers::APP1
-            && self.contents.get(..EXIF_DATA_PREFIX.len()) == Some(EXIF_DATA_PREFIX)
-        {
-            self.contents.get(EXIF_DATA_PREFIX.len()..)
+    pub(super) fn exif(&self) -> Option<Bytes> {
+        if self.contents.len() < EXIF_DATA_PREFIX.len() {
+            return None;
+        }
+
+        let mut b = self.contents.clone();
+        let prefix = b.split_to(EXIF_DATA_PREFIX.len());
+
+        if self.marker == markers::APP1 && prefix.bytes() == EXIF_DATA_PREFIX {
+            Some(b)
         } else {
             None
         }
@@ -176,7 +183,7 @@ impl JpegSegment {
         w.write_all(&self.contents)?;
 
         if let Some(entropy) = &self.entropy {
-            entropy.write_to(w)?;
+            w.write_all(entropy)?;
         }
 
         Ok(())

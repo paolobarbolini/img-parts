@@ -1,5 +1,6 @@
 use std::fs;
 
+use bytes::Bytes;
 use img_parts::webp::WebP;
 
 #[test]
@@ -23,9 +24,9 @@ fn reqwrite_webp_out() {
 }
 
 fn extract_webp_image(input: &str) {
-    let file = fs::read(format!("tests/images/{}", input)).expect("read webp");
+    let file = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read webp"));
 
-    let webp = WebP::read(&mut &file[..]).unwrap();
+    let webp = WebP::from_bytes(file.clone()).unwrap();
 
     let mut bytes = Vec::new();
     webp.write_to(&mut bytes).expect("write webp");

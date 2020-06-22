@@ -8,9 +8,6 @@ pub enum Error {
     /// An error occurred while interacting with a Reader or a Writer
     Io(io::Error),
 
-    /// Completing the operation would have required exceeding the `limit`
-    LimitExceeded,
-
     /// The first two bytes of the `Jpeg` weren't a SOI marker
     FirstTwoBytesNotSOI,
 
@@ -27,8 +24,6 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::Io(ref err) => err.fmt(f),
-
-            Error::LimitExceeded => write!(f, "length exceeded the provided limit"),
 
             Error::FirstTwoBytesNotSOI => write!(f, "first two bytes is not a SOI marker"),
 

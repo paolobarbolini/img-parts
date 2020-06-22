@@ -1,6 +1,6 @@
-use std::fs::{self, File};
-use std::io::BufReader;
+use std::fs::{self};
 
+use bytes::Bytes;
 use img_parts::webp::WebP;
 use img_parts::ImageICC;
 
@@ -20,14 +20,13 @@ fn extract_webp_adobergb() {
 }
 
 fn extract_webp_image(input: &str, icc: Option<&str>) {
-    let file = File::open(format!("tests/images/{}", input)).expect("open webp");
-    let mut reader = BufReader::new(file);
+    let buf = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read webp"));
 
-    let webp = WebP::read(&mut reader).unwrap();
+    let webp = WebP::from_bytes(buf).unwrap();
     let iccp = webp.icc_profile();
 
     if let Some(icc) = icc {
-        let saved = fs::read(format!("tests/images/{}", icc)).expect("read icc");
+        let saved = Bytes::from(fs::read(format!("tests/images/{}", icc)).expect("read icc"));
         assert_eq!(iccp, Some(saved));
     } else {
         assert!(iccp.is_none());

@@ -1,6 +1,6 @@
-use std::fs::{self, File};
-use std::io::BufReader;
+use std::fs::{self};
 
+use bytes::Bytes;
 use img_parts::webp::WebP;
 use img_parts::ImageEXIF;
 
@@ -20,14 +20,13 @@ fn extract_webp_adobergb() {
 }
 
 fn extract_webp_image(input: &str, exif: Option<&str>) {
-    let file = File::open(format!("tests/images/{}", input)).expect("open webp");
-    let mut reader = BufReader::new(file);
+    let buf = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read webp"));
 
-    let webp = WebP::read(&mut reader).unwrap();
+    let webp = WebP::from_bytes(buf).unwrap();
     let exif_meta = webp.exif();
 
     if let Some(exif) = exif {
-        let saved = fs::read(format!("tests/images/{}", exif)).expect("read exif");
+        let saved = Bytes::from(fs::read(format!("tests/images/{}", exif)).expect("read exif"));
         assert_eq!(exif_meta, Some(saved));
     } else {
         assert!(exif_meta.is_none());

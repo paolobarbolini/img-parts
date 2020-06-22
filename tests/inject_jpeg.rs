@@ -1,5 +1,6 @@
 use std::fs;
 
+use bytes::Bytes;
 use img_parts::jpeg::Jpeg;
 use img_parts::ImageICC;
 
@@ -19,10 +20,10 @@ fn inject_jpeg_result1() {
 }
 
 fn inject_jpeg_noop(input: &str, icc: &str) {
-    let file = fs::read(format!("tests/images/{}", input)).expect("read jpeg");
-    let icc = fs::read(format!("tests/images/{}", icc)).expect("read icc");
+    let file = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read jpeg"));
+    let icc = Bytes::from(fs::read(format!("tests/images/{}", icc)).expect("read icc"));
 
-    let mut jpeg = Jpeg::read(&mut &file[..]).unwrap();
+    let mut jpeg = Jpeg::from_bytes(file.clone()).unwrap();
     jpeg.set_icc_profile(Some(icc));
 
     let mut out = Vec::new();
@@ -31,15 +32,16 @@ fn inject_jpeg_noop(input: &str, icc: &str) {
 }
 
 fn inject_jpeg_result(input: &str, output: &str, icc: &str) {
-    let file = fs::read(format!("tests/images/{}", input)).expect("read jpeg");
-    let icc = fs::read(format!("tests/images/{}", icc)).expect("read icc");
+    let file = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read jpeg"));
+    let icc = Bytes::from(fs::read(format!("tests/images/{}", icc)).expect("read icc"));
 
-    let mut jpeg = Jpeg::read(&mut &file[..]).expect("parse jpeg");
+    let mut jpeg = Jpeg::from_bytes(file).expect("parse jpeg");
     jpeg.set_icc_profile(Some(icc));
 
     let mut out = Vec::new();
     jpeg.write_to(&mut out).expect("write jpeg");
 
-    let expected = fs::read(format!("tests/images/{}", output)).expect("read expected jpeg");
+    let expected =
+        Bytes::from(fs::read(format!("tests/images/{}", output)).expect("read expected jpeg"));
     assert_eq!(out, expected);
 }

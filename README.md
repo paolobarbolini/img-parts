@@ -18,15 +18,15 @@ back.
 use img_parts::jpeg::Jpeg;
 use img_parts::{ImageEXIF, ImageICC};
 
-let input = File::open("img.jpg")?;
+let input = fs::read("img.jpg")?;
 let output = File::create("out.jpg")?;
 
-let mut jpeg = Jpeg::read(&mut BufReader::new(input))?;
+let mut jpeg = Jpeg::from_bytes(input.into())?;
 let icc_profile = jpeg.icc_profile();
 let exif_metadata = jpeg.exif();
 
-jpeg.set_icc_profile(Some(another_icc_profile));
-jpeg.set_exif(Some(new_exif_metadata));
+jpeg.set_icc_profile(Some(another_icc_profile.into()));
+jpeg.set_exif(Some(new_exif_metadata.into()));
 jpeg.write_to(&mut BufWriter::new(output))?;
 ```
 

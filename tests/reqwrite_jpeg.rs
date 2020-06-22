@@ -1,5 +1,6 @@
 use std::fs;
 
+use bytes::Bytes;
 use img_parts::jpeg::Jpeg;
 
 #[test]
@@ -23,9 +24,9 @@ fn reqwrite_jpeg_plane() {
 }
 
 fn extract_jpeg_image(input: &str) {
-    let file = fs::read(format!("tests/images/{}", input)).expect("read jpeg");
+    let file = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read jpeg"));
 
-    let jpeg = Jpeg::read(&mut &file[..]).unwrap();
+    let jpeg = Jpeg::from_bytes(file.clone()).unwrap();
 
     let mut bytes = Vec::new();
     jpeg.write_to(&mut bytes).expect("write jpeg");

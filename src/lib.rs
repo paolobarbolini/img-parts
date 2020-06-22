@@ -13,7 +13,7 @@
 //! back.
 //!
 //! ```rust,no_run
-//! # use std::fs::File;
+//! # use std::fs::{self, File};
 //! # use std::io::{BufReader, BufWriter};
 //! # use img_parts::Result;
 //! # fn run() -> Result<()> {
@@ -22,15 +22,15 @@
 //!
 //! # let another_icc_profile = Vec::new();
 //! # let new_exif_metadata = Vec::new();
-//! let input = File::open("img.jpg")?;
+//! let input = fs::read("img.jpg")?;
 //! let output = File::create("out.jpg")?;
 //!
-//! let mut jpeg = Jpeg::read(&mut BufReader::new(input))?;
+//! let mut jpeg = Jpeg::from_bytes(input.into())?;
 //! let icc_profile = jpeg.icc_profile();
 //! let exif_metadata = jpeg.exif();
 //!
-//! jpeg.set_icc_profile(Some(another_icc_profile));
-//! jpeg.set_exif(Some(new_exif_metadata));
+//! jpeg.set_icc_profile(Some(another_icc_profile.into()));
+//! jpeg.set_exif(Some(new_exif_metadata.into()));
 //! jpeg.write_to(&mut BufWriter::new(output))?;
 //! # Ok(())
 //! # }

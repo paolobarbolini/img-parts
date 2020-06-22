@@ -1,6 +1,6 @@
-use std::fs::{self, File};
-use std::io::BufReader;
+use std::fs::{self};
 
+use bytes::Bytes;
 use img_parts::jpeg::Jpeg;
 use img_parts::ImageICC;
 
@@ -25,17 +25,16 @@ fn extract_jpeg_plane() {
 }
 
 fn extract_jpeg_image(input: &str, icc: Option<&str>) {
-    let file = File::open(format!("tests/images/{}", input)).expect("open jpeg");
-    let mut reader = BufReader::new(file);
+    let buf = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read jpeg"));
 
-    let jpeg = Jpeg::read(&mut reader).unwrap();
+    let jpeg = Jpeg::from_bytes(buf).unwrap();
     let iccp = jpeg.icc_profile();
 
     if let Some(icc) = icc {
         let iccp = iccp.unwrap();
 
-        let saved = fs::read(format!("tests/images/{}", icc)).expect("read icc");
-        assert_eq!(iccp, saved.as_slice());
+        let saved = Bytes::from(fs::read(format!("tests/images/{}", icc)).expect("read icc"));
+        assert_eq!(iccp, saved);
     } else {
         assert!(iccp.is_none());
     }

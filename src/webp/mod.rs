@@ -1,6 +1,7 @@
-use std::io::{Read, Write};
+use std::io::Write;
 
 use byteorder::{ByteOrder, LittleEndian};
+use bytes::{BufMut, Bytes, BytesMut};
 
 use crate::riff::{RiffChunk, RiffContent};
 use crate::vp8::size_from_vp8_header;
@@ -55,24 +56,8 @@ impl WebP {
     /// This method fails if reading fails, if the first chunk doesn't have
     /// an id of "RIFF" or if the content kind of the first chunk isn't "WEBP".
     #[inline]
-    pub fn read(r: &mut dyn Read) -> Result<WebP> {
-        WebP::read_with_limits(r, u32::max_value())
-    }
-
-    /// Create a new `WebP` image from a Reader.
-    ///
-    /// `limit` is the maximum amount of bytes it will be allowed to read.
-    /// If a field specifies a length bigger than the remaining `limit` an
-    /// [`Error::LimitExceeded`][crate::Error::LimitExceeded] error will be
-    /// returned.
-    ///
-    /// # Errors
-    ///
-    /// This method fails if reading fails, if the first chunk doesn't have
-    /// an id of "RIFF", if the content kind of the first chunk isn't "WEBP"
-    /// or if the `limit` if exceeded.
-    pub fn read_with_limits(r: &mut dyn Read, limit: u32) -> Result<WebP> {
-        let riff = RiffChunk::read_with_limits(r, limit)?;
+    pub fn from_bytes(b: Bytes) -> Result<WebP> {
+        let riff = RiffChunk::from_bytes(b)?;
         WebP::new(riff)
     }
 
@@ -118,16 +103,18 @@ impl WebP {
             let (width, height) = self.dimensions().unwrap();
 
             let flags = WebPFlags::from_webp(self);
-            let mut content = Vec::with_capacity(10);
-            content.extend(&flags.0);
+            let mut content = BytesMut::with_capacity(10);
+
+            // TODO: change this mess
+            content.put(Bytes::from(flags.0.to_vec()));
 
             let mut buf = [0u8; 3];
             LittleEndian::write_u24(&mut buf, width - 1);
-            content.extend(&buf);
+            content.put(Bytes::from(buf.to_vec()));
             LittleEndian::write_u24(&mut buf, height - 1);
-            content.extend(&buf);
+            content.put(Bytes::from(buf.to_vec()));
 
-            let chunk = RiffChunk::new(CHUNK_VP8X, RiffContent::Data(content));
+            let chunk = RiffChunk::new(CHUNK_VP8X, RiffContent::Data(content.freeze()));
             self.chunks_mut().insert(pos, chunk);
         }
     }
@@ -149,7 +136,7 @@ impl WebP {
         }
 
         if let Ok(vp8) = self.chunk_by_id(CHUNK_VP8) {
-            let (width, height) = size_from_vp8_header(vp8.content().data()?);
+            let (width, height) = size_from_vp8_header(&vp8.content().data()?);
             return Some((width as u32, height as u32));
         }
 
@@ -226,11 +213,11 @@ impl WebP {
 }
 
 impl ImageICC for WebP {
-    fn icc_profile(&self) -> Option<Vec<u8>> {
-        self.chunk_by_id(CHUNK_ICCP).ok()?.content().data().cloned()
+    fn icc_profile(&self) -> Option<Bytes> {
+        self.chunk_by_id(CHUNK_ICCP).ok()?.content().data()
     }
 
-    fn set_icc_profile(&mut self, profile: Option<Vec<u8>>) {
+    fn set_icc_profile(&mut self, profile: Option<Bytes>) {
         self.remove_chunks_by_id(CHUNK_ICCP);
 
         if let Some(profile) = profile {
@@ -257,26 +244,23 @@ impl ImageICC for WebP {
 }
 
 impl ImageEXIF for WebP {
-    fn exif(&self) -> Option<Vec<u8>> {
-        let mut bytes = self
-            .chunk_by_id(CHUNK_EXIF)
+    fn exif(&self) -> Option<Bytes> {
+        self.chunk_by_id(CHUNK_EXIF)
             .ok()?
             .content()
             .data()
-            .cloned()?;
-        bytes.drain(..6);
-        Some(bytes)
+            .map(|b| b.slice(6..))
     }
 
-    fn set_exif(&mut self, exif: Option<Vec<u8>>) {
+    fn set_exif(&mut self, exif: Option<Bytes>) {
         self.remove_chunks_by_id(CHUNK_EXIF);
 
         if let Some(exif) = exif {
-            let mut contents = Vec::with_capacity(6 + exif.len());
-            contents.extend(EXIF_DATA_PREFIX);
-            contents.extend(exif);
+            let mut contents = BytesMut::with_capacity(6 + exif.len());
+            contents.put(EXIF_DATA_PREFIX);
+            contents.put(exif);
 
-            let chunk = RiffChunk::new(CHUNK_EXIF, RiffContent::Data(contents));
+            let chunk = RiffChunk::new(CHUNK_EXIF, RiffContent::Data(contents.freeze()));
             self.chunks_mut().push(chunk);
         }
 
