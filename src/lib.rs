@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/img-parts/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/img-parts/0.1.1")]
 
 //! # img-parts
 //!
