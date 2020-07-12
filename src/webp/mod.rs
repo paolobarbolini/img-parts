@@ -1,9 +1,10 @@
+use std::convert::TryInto;
 use std::io::Write;
 
-use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, Bytes, BytesMut};
 
 use crate::riff::{RiffChunk, RiffContent};
+use crate::util::{u24_from_le_bytes, u24_to_le_bytes};
 use crate::vp8::size_from_vp8_header;
 use crate::vp8::VP8Kind;
 use crate::{Error, ImageEXIF, ImageICC, Result, EXIF_DATA_PREFIX};
@@ -108,11 +109,10 @@ impl WebP {
             // TODO: change this mess
             content.put(Bytes::from(flags.0.to_vec()));
 
-            let mut buf = [0u8; 3];
-            LittleEndian::write_u24(&mut buf, width - 1);
-            content.put(Bytes::from(buf.to_vec()));
-            LittleEndian::write_u24(&mut buf, height - 1);
-            content.put(Bytes::from(buf.to_vec()));
+            let buf = u24_to_le_bytes(width - 1);
+            content.extend_from_slice(&buf);
+            let buf = u24_to_le_bytes(height - 1);
+            content.extend_from_slice(&buf);
 
             let chunk = RiffChunk::new(CHUNK_VP8X, RiffContent::Data(content.freeze()));
             self.chunks_mut().insert(pos, chunk);
@@ -128,8 +128,8 @@ impl WebP {
         if let Ok(vp8x) = self.chunk_by_id(CHUNK_VP8X) {
             if let Some(data) = vp8x.content().data() {
                 if let Some(range) = data.get(2..8) {
-                    let width = LittleEndian::read_u24(&range[0..3]) + 1;
-                    let height = LittleEndian::read_u24(&range[3..6]) + 1;
+                    let width = u24_from_le_bytes(range[0..3].try_into().unwrap()) + 1;
+                    let height = u24_from_le_bytes(range[3..6].try_into().unwrap()) + 1;
                     return Some((width, height));
                 }
             }

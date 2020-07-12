@@ -1,4 +1,6 @@
-use byteorder::{ByteOrder, LittleEndian};
+use std::convert::TryInto;
+
+use crate::util::u24_from_le_bytes;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum VP8Kind {
@@ -12,7 +14,7 @@ pub enum VP8Kind {
 
 // the first 10 bytes are necessary
 pub(crate) fn size_from_vp8_header(b: &[u8]) -> (u16, u16) {
-    let tag = LittleEndian::read_u24(&b[0..3]);
+    let tag = u24_from_le_bytes(b[0..3].try_into().unwrap());
 
     let keyframe = tag & 1 == 0;
 
@@ -21,8 +23,8 @@ pub(crate) fn size_from_vp8_header(b: &[u8]) -> (u16, u16) {
             panic!("invalid frame magic bytes");
         }
 
-        let width = LittleEndian::read_u16(&b[6..8]);
-        let height = LittleEndian::read_u16(&b[8..10]);
+        let width = u16::from_le_bytes(b[6..8].try_into().unwrap());
+        let height = u16::from_le_bytes(b[8..10].try_into().unwrap());
 
         (width & 0x3FFF, height & 0x3FFF)
     } else {

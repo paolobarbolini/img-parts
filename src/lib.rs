@@ -45,5 +45,6 @@ mod error;
 mod exif;
 pub mod jpeg;
 pub mod riff;
+pub(crate) mod util;
 pub mod vp8;
 pub mod webp;
