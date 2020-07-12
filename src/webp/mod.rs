@@ -207,8 +207,17 @@ impl WebP {
     /// Internally calls [`RiffChunk::write_to`][crate::riff::RiffChunk::write_to] on the
     /// inner `RiffChunk`
     #[inline]
-    pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
+    pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
         self.riff.write_to(w)
+    }
+
+    /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
+    ///
+    /// Internally calls [`RiffChunk::encode`][crate::riff::RiffChunk::encode] on the
+    /// inner `RiffChunk`
+    #[inline]
+    pub fn encode(self) -> impl Iterator<Item = Bytes> {
+        self.riff.encode()
     }
 }
 

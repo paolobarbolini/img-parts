@@ -27,9 +27,10 @@ fn extract_jpeg_image(input: &str) {
     let file = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read jpeg"));
 
     let jpeg = Jpeg::from_bytes(file.clone()).unwrap();
+    let jpeg_len = jpeg.len();
 
     let mut bytes = Vec::new();
     jpeg.write_to(&mut bytes).expect("write jpeg");
     assert_eq!(file, bytes);
-    assert_eq!(file.len(), jpeg.len());
+    assert_eq!(file.len(), jpeg_len);
 }

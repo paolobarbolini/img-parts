@@ -2,7 +2,6 @@ use std::convert::TryInto;
 use std::fmt;
 use std::io::{self, Write};
 
-use byteorder::{BigEndian, WriteBytesExt};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use super::markers::{self, has_entropy, has_length};
@@ -16,7 +15,7 @@ const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 pub struct JpegSegment {
     marker: u8,
     contents: Bytes,
-    entropy: Option<Bytes>,
+    entropy: Bytes,
 }
 
 #[allow(clippy::len_without_is_empty)]
@@ -27,7 +26,7 @@ impl JpegSegment {
         JpegSegment {
             marker,
             contents: Bytes::new(),
-            entropy: None,
+            entropy: Bytes::new(),
         }
     }
 
@@ -37,7 +36,7 @@ impl JpegSegment {
         JpegSegment {
             marker,
             contents,
-            entropy: None,
+            entropy: Bytes::new(),
         }
     }
 
@@ -47,7 +46,7 @@ impl JpegSegment {
         JpegSegment {
             marker,
             contents,
-            entropy: Some(entropy),
+            entropy,
         }
     }
 
@@ -112,12 +111,7 @@ impl JpegSegment {
     /// - The size of the content.
     /// - The size of the encoded entropy data.
     pub fn len_with_entropy(&self) -> usize {
-        self.len()
-            + self
-                .entropy
-                .as_ref()
-                .map(|entropy| entropy.len())
-                .unwrap_or(0)
+        self.len() + self.entropy.len()
     }
 
     /// Get the second byte of the marker of this `JpegSegment`.
@@ -135,7 +129,7 @@ impl JpegSegment {
     /// Check if this `JpegSegment` has entropy.
     #[inline]
     pub fn has_entropy(&self) -> bool {
-        self.entropy.is_some()
+        !self.entropy.is_empty()
     }
 
     /// Returns the ICC segment data if this `JpegSegment` is an ICC segment.
@@ -176,17 +170,22 @@ impl JpegSegment {
     }
 
     /// Encode this `JpegSegment` and write it to a Writer.
-    pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
-        w.write_u8(markers::P)?;
-        w.write_u8(self.marker())?;
-        w.write_u16::<BigEndian>((self.len() - 2).try_into().unwrap())?;
-        w.write_all(&self.contents)?;
-
-        if let Some(entropy) = &self.entropy {
-            w.write_all(entropy)?;
+    pub fn write_to(self, w: &mut dyn Write) -> io::Result<()> {
+        for item in self.encode() {
+            w.write_all(&item)?;
         }
 
         Ok(())
+    }
+
+    /// Returns an `Iterator` over the `Bytes` composing this `JpegSegment`
+    pub fn encode(self) -> impl Iterator<Item = Bytes> {
+        let mut vec = BytesMut::with_capacity(4);
+        vec.put_u8(markers::P);
+        vec.put_u8(self.marker());
+        vec.put_u16((self.len() - 2).try_into().unwrap());
+
+        vec![vec.freeze(), self.contents, self.entropy].into_iter()
     }
 }
 

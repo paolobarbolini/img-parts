@@ -2,8 +2,7 @@ use std::convert::TryInto;
 use std::fmt;
 use std::io::Write;
 
-use byteorder::{LittleEndian, WriteBytesExt};
-use bytes::{Buf, Bytes};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use crate::{Error, Result};
 
@@ -90,10 +89,21 @@ impl RiffChunk {
     }
 
     /// Encode this `RiffChunk` and write it to a Writer.
-    pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
-        w.write_all(&self.id)?;
-        w.write_u32::<LittleEndian>(self.content.len())?;
-        self.content.write_to(w)
+    pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
+        for item in self.encode() {
+            w.write_all(&item)?;
+        }
+
+        Ok(())
+    }
+
+    /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
+    pub fn encode(self) -> impl Iterator<Item = Bytes> {
+        let mut vec = BytesMut::with_capacity(8);
+        vec.extend_from_slice(&self.id);
+        vec.put_u32_le(self.content.len());
+
+        vec![vec.freeze()].into_iter().chain(self.content.encode())
     }
 }
 
@@ -176,27 +186,37 @@ impl RiffContent {
     }
 
     /// Encode this `RiffContent` and write it to a Writer.
-    pub fn write_to(&self, w: &mut dyn Write) -> Result<()> {
+    pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
+        for item in self.encode() {
+            w.write_all(&item)?;
+        }
+
+        Ok(())
+    }
+
+    /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
+    pub fn encode(self) -> impl Iterator<Item = Bytes> {
+        let mut vec = Vec::new();
+
         match self {
             RiffContent::List { kind, subchunks } => {
                 if let Some(kind) = kind {
-                    w.write_all(kind)?;
+                    vec.push(Bytes::copy_from_slice(&kind))
                 }
 
-                for chunk in subchunks {
-                    chunk.write_to(w)?;
-                }
+                vec.extend(subchunks.into_iter().flat_map(|chunk| chunk.encode()));
             }
             RiffContent::Data(data) => {
-                w.write_all(data)?;
+                let len = data.len();
+                vec.push(data);
 
-                if data.len() % 2 != 0 {
-                    w.write_u8(0x00)?;
+                if len % 2 != 0 {
+                    vec.push(Bytes::from_static(&[0x00]));
                 }
             }
         };
 
-        Ok(())
+        vec.into_iter()
     }
 }
 

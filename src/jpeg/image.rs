@@ -1,6 +1,6 @@
 use std::io::{self, Write};
+use std::iter;
 
-use byteorder::WriteBytesExt;
 use bytes::{Buf, Bytes, BytesMut};
 
 use super::markers;
@@ -115,15 +115,23 @@ impl Jpeg {
     }
 
     /// Encode this `Jpeg` and write it to a Writer
-    pub fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
-        w.write_u8(markers::P)?;
-        w.write_u8(markers::SOI)?;
-
-        for segment in &self.segments {
-            segment.write_to(w)?;
+    pub fn write_to(self, w: &mut dyn Write) -> io::Result<()> {
+        for item in self.encode() {
+            w.write_all(&item)?;
         }
 
         Ok(())
+    }
+
+    /// Returns an `Iterator` over the `Bytes` composing this `Jpeg`
+    pub fn encode(self) -> impl Iterator<Item = Bytes> {
+        let header = Bytes::from_static(&[markers::P, markers::SOI]);
+
+        iter::once(header).chain(
+            self.segments
+                .into_iter()
+                .flat_map(|segment| segment.encode()),
+        )
     }
 }
 
