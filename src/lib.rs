@@ -1,5 +1,8 @@
 #![doc(html_root_url = "https://docs.rs/img-parts/0.1.1")]
 
+// TODO: remove this once the MSRV is 1.42.0
+#![allow(clippy::match_like_matches_macro)]
+
 //! # img-parts
 //!
 //! The `img-parts` crate provides a low level api for reading and
