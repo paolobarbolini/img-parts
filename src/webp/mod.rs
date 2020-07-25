@@ -3,7 +3,7 @@ use std::io::Write;
 
 use bytes::{BufMut, Bytes, BytesMut};
 
-use crate::riff::{RiffChunk, RiffContent};
+use crate::riff::{RiffChunk, RiffChunkIter, RiffContent};
 use crate::util::{u24_from_le_bytes, u24_to_le_bytes};
 use crate::vp8::size_from_vp8_header;
 use crate::vp8::VP8Kind;
@@ -216,7 +216,7 @@ impl WebP {
     /// Internally calls [`RiffChunk::encode`][crate::riff::RiffChunk::encode] on the
     /// inner `RiffChunk`
     #[inline]
-    pub fn encode(self) -> impl Iterator<Item = Bytes> {
+    pub fn encode(self) -> RiffChunkIter {
         self.riff.encode()
     }
 }

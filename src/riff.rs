@@ -13,7 +13,7 @@ pub struct RiffChunk {
     content: RiffContent,
 }
 
-// The contents of a RIFF chunk
+/// The contents of a RIFF chunk
 #[derive(Clone, PartialEq)]
 pub enum RiffContent {
     List {
@@ -98,12 +98,27 @@ impl RiffChunk {
     }
 
     /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
-    pub fn encode(self) -> impl Iterator<Item = Bytes> {
-        let mut vec = BytesMut::with_capacity(8);
-        vec.extend_from_slice(&self.id);
-        vec.put_u32_le(self.content.len());
+    pub fn encode(self) -> RiffChunkIter {
+        RiffChunkIter {
+            inner: self,
+            pos: 0,
+        }
+    }
 
-        vec![vec.freeze()].into_iter().chain(self.content.encode())
+    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
+        match pos {
+            0 => {
+                let mut vec = BytesMut::with_capacity(8);
+                vec.extend_from_slice(&self.id);
+                vec.put_u32_le(self.content.len());
+
+                Some(vec.freeze())
+            }
+            _ => {
+                *pos -= 1;
+                self.content.encode_at(pos)
+            }
+        }
     }
 }
 
@@ -195,28 +210,93 @@ impl RiffContent {
     }
 
     /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
-    pub fn encode(self) -> impl Iterator<Item = Bytes> {
-        let mut vec = Vec::new();
+    pub fn encode(self) -> RiffContentIter {
+        RiffContentIter {
+            inner: self,
+            pos: 0,
+        }
+    }
 
+    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
         match self {
             RiffContent::List { kind, subchunks } => {
                 if let Some(kind) = kind {
-                    vec.push(Bytes::copy_from_slice(&kind))
+                    if *pos == 0 {
+                        return Some(Bytes::copy_from_slice(kind.as_ref()));
+                    }
+
+                    *pos -= 1;
+                };
+
+                for chunk in subchunks {
+                    if let Some(bytes) = chunk.encode_at(pos) {
+                        return Some(bytes);
+                    }
                 }
 
-                vec.extend(subchunks.into_iter().flat_map(|chunk| chunk.encode()));
+                None
             }
-            RiffContent::Data(data) => {
-                let len = data.len();
-                vec.push(data);
-
-                if len % 2 != 0 {
-                    vec.push(Bytes::from_static(&[0x00]));
+            RiffContent::Data(data) => match pos {
+                0 => Some(data.clone()),
+                1 if data.len() % 2 == 1 => Some(Bytes::from_static(&[0x00])),
+                _ => {
+                    *pos -= 1 + data.len() % 2;
+                    None
                 }
-            }
-        };
+            },
+        }
+    }
+}
 
-        vec.into_iter()
+/// An iterator that returns the [`Bytes`][bytes::Bytes] making up the [`RiffChunk`][crate::riff::RiffChunk]
+///
+/// This struct is created by the [encode][crate::riff::RiffChunk::encode] method on
+/// [`RiffChunk`][crate::riff::RiffChunk]. See its documentation for more.
+#[derive(Debug, Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct RiffChunkIter {
+    inner: RiffChunk,
+    pos: usize,
+}
+
+/// An iterator that returns the [`Bytes`][bytes::Bytes] making up the [`RiffContent`][crate::riff::RiffContent]
+///
+/// This struct is created by the [encode][crate::riff::RiffChunk::encode] method on
+/// [`RiffContent`][crate::riff::RiffContent]. See its documentation for more.
+#[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct RiffContentIter {
+    inner: RiffContent,
+    pos: usize,
+}
+
+impl Iterator for RiffChunkIter {
+    type Item = Bytes;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut pos = self.pos;
+        let item = self.inner.encode_at(&mut pos);
+
+        if item.is_some() {
+            self.pos += 1;
+        }
+
+        item
+    }
+}
+
+impl Iterator for RiffContentIter {
+    type Item = Bytes;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut pos = self.pos;
+        let item = self.inner.encode_at(&mut pos);
+
+        if item.is_some() {
+            self.pos += 1;
+        }
+
+        item
     }
 }
 
