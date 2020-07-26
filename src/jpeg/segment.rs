@@ -182,7 +182,7 @@ impl JpegSegment {
     /// Returns an `Iterator` over the `Bytes` composing this `JpegSegment`
     #[inline]
     pub fn encode(self) -> ImageEncoder<Self> {
-        ImageEncoder::new(self)
+        ImageEncoder::from(self)
     }
 }
 

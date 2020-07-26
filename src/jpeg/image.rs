@@ -126,7 +126,7 @@ impl Jpeg {
     /// Returns an `Iterator` over the `Bytes` composing this `Jpeg`
     #[inline]
     pub fn encode(self) -> ImageEncoder<Self> {
-        ImageEncoder::new(self)
+        ImageEncoder::from(self)
     }
 }
 

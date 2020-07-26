@@ -44,12 +44,6 @@ pub struct ImageEncoder<I> {
     pos: usize,
 }
 
-impl<I> ImageEncoder<I> {
-    pub(crate) fn new(inner: I) -> Self {
-        Self { inner, pos: 0 }
-    }
-}
-
 impl<I: EncodeAt> Iterator for ImageEncoder<I> {
     type Item = Bytes;
 
@@ -62,6 +56,12 @@ impl<I: EncodeAt> Iterator for ImageEncoder<I> {
         }
 
         item
+    }
+}
+
+impl<I: EncodeAt> From<I> for ImageEncoder<I> {
+    fn from(ea: I) -> ImageEncoder<I> {
+        Self { inner: ea, pos: 0 }
     }
 }
 

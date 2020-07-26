@@ -101,7 +101,7 @@ impl RiffChunk {
     /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
     #[inline]
     pub fn encode(self) -> ImageEncoder<Self> {
-        ImageEncoder::new(self)
+        ImageEncoder::from(self)
     }
 }
 
@@ -213,7 +213,7 @@ impl RiffContent {
     /// Returns an `Iterator` over the `Bytes` composing this `RiffContent`
     #[inline]
     pub fn encode(self) -> ImageEncoder<Self> {
-        ImageEncoder::new(self)
+        ImageEncoder::from(self)
     }
 }
 
