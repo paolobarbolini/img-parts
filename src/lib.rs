@@ -39,10 +39,12 @@
 //! ```
 
 pub use common::{ImageEXIF, ImageICC};
+pub use encoder::ImageEncoder;
 pub use error::{Error, Result};
 pub(crate) use exif::EXIF_DATA_PREFIX;
 
 mod common;
+mod encoder;
 mod error;
 mod exif;
 pub mod jpeg;

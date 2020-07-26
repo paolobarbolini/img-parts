@@ -6,6 +6,7 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use super::markers::{self, has_entropy, has_length};
 use super::ICC_PREFIX_SIZE;
+use crate::encoder::{EncodeAt, ImageEncoder};
 use crate::{Result, EXIF_DATA_PREFIX};
 
 const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
@@ -179,14 +180,13 @@ impl JpegSegment {
     }
 
     /// Returns an `Iterator` over the `Bytes` composing this `JpegSegment`
-    pub fn encode(self) -> JpegSegmentIter {
-        JpegSegmentIter {
-            inner: self,
-            pos: 0,
-        }
+    #[inline]
+    pub fn encode(self) -> ImageEncoder<Self> {
+        ImageEncoder::new(self)
     }
+}
 
-    /// Returns an `Iterator` over the `Bytes` composing this `JpegSegment`
+impl EncodeAt for JpegSegment {
     fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
         match pos {
             0 => {
@@ -212,31 +212,5 @@ impl fmt::Debug for JpegSegment {
         f.debug_struct("JpegSegment")
             .field("marker", &self.marker)
             .finish()
-    }
-}
-
-/// An iterator that returns the [`Bytes`][bytes::Bytes] making up the [`JpegSegment`][JpegSegment]
-///
-/// This struct is created by the [encode][JpegSegment::encode] method on
-/// [`JpegSegment`][JpegSegment]. See its documentation for more.
-#[derive(Clone)]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct JpegSegmentIter {
-    inner: JpegSegment,
-    pos: usize,
-}
-
-impl Iterator for JpegSegmentIter {
-    type Item = Bytes;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut pos = self.pos;
-        let item = self.inner.encode_at(&mut pos);
-
-        if item.is_some() {
-            self.pos += 1;
-        }
-
-        item
     }
 }

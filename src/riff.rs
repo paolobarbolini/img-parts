@@ -4,6 +4,7 @@ use std::io::Write;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
+use crate::encoder::{EncodeAt, ImageEncoder};
 use crate::{Error, Result};
 
 /// The representation of a RIFF chunk
@@ -98,13 +99,13 @@ impl RiffChunk {
     }
 
     /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
-    pub fn encode(self) -> RiffChunkIter {
-        RiffChunkIter {
-            inner: self,
-            pos: 0,
-        }
+    #[inline]
+    pub fn encode(self) -> ImageEncoder<Self> {
+        ImageEncoder::new(self)
     }
+}
 
+impl EncodeAt for RiffChunk {
     fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
         match pos {
             0 => {
@@ -209,14 +210,14 @@ impl RiffContent {
         Ok(())
     }
 
-    /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
-    pub fn encode(self) -> RiffContentIter {
-        RiffContentIter {
-            inner: self,
-            pos: 0,
-        }
+    /// Returns an `Iterator` over the `Bytes` composing this `RiffContent`
+    #[inline]
+    pub fn encode(self) -> ImageEncoder<Self> {
+        ImageEncoder::new(self)
     }
+}
 
+impl EncodeAt for RiffContent {
     fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
         match self {
             RiffContent::List { kind, subchunks } => {
@@ -245,58 +246,6 @@ impl RiffContent {
                 }
             },
         }
-    }
-}
-
-/// An iterator that returns the [`Bytes`][bytes::Bytes] making up the [`RiffChunk`][crate::riff::RiffChunk]
-///
-/// This struct is created by the [encode][crate::riff::RiffChunk::encode] method on
-/// [`RiffChunk`][crate::riff::RiffChunk]. See its documentation for more.
-#[derive(Debug, Clone)]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct RiffChunkIter {
-    inner: RiffChunk,
-    pos: usize,
-}
-
-/// An iterator that returns the [`Bytes`][bytes::Bytes] making up the [`RiffContent`][crate::riff::RiffContent]
-///
-/// This struct is created by the [encode][crate::riff::RiffChunk::encode] method on
-/// [`RiffContent`][crate::riff::RiffContent]. See its documentation for more.
-#[derive(Clone)]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct RiffContentIter {
-    inner: RiffContent,
-    pos: usize,
-}
-
-impl Iterator for RiffChunkIter {
-    type Item = Bytes;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut pos = self.pos;
-        let item = self.inner.encode_at(&mut pos);
-
-        if item.is_some() {
-            self.pos += 1;
-        }
-
-        item
-    }
-}
-
-impl Iterator for RiffContentIter {
-    type Item = Bytes;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut pos = self.pos;
-        let item = self.inner.encode_at(&mut pos);
-
-        if item.is_some() {
-            self.pos += 1;
-        }
-
-        item
     }
 }
 
