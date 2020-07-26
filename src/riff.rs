@@ -89,16 +89,18 @@ impl RiffChunk {
         len
     }
 
-    /// Encode this `RiffChunk` and write it to a Writer.
+    #[inline]
+    #[doc(hidden)]
+    #[deprecated(
+        since = "0.2.0",
+        note = "Please use RiffChunk::encode().write_to(writer)"
+    )]
     pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
-        for item in self.encode() {
-            w.write_all(&item)?;
-        }
-
+        self.encode().write_to(w)?;
         Ok(())
     }
 
-    /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
+    /// Returns an encoder for this `RiffChunk`
     #[inline]
     pub fn encode(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)
@@ -201,16 +203,18 @@ impl RiffContent {
         }
     }
 
-    /// Encode this `RiffContent` and write it to a Writer.
+    #[inline]
+    #[doc(hidden)]
+    #[deprecated(
+        since = "0.2.0",
+        note = "Please use RiffContent::encode().write_to(writer)"
+    )]
     pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
-        for item in self.encode() {
-            w.write_all(&item)?;
-        }
-
+        self.encode().write_to(w)?;
         Ok(())
     }
 
-    /// Returns an `Iterator` over the `Bytes` composing this `RiffContent`
+    /// Returns an encoder for this `RiffContent`
     #[inline]
     pub fn encode(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)

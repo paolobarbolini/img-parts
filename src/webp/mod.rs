@@ -203,13 +203,12 @@ impl WebP {
         self.riff.len()
     }
 
-    /// Encode this `WebP` and write it to a Writer
-    ///
-    /// Internally calls [`RiffChunk::write_to`][crate::riff::RiffChunk::write_to] on the
-    /// inner `RiffChunk`
     #[inline]
+    #[doc(hidden)]
+    #[deprecated(since = "0.2.0", note = "Please use WebP::encode().write_to(writer)")]
     pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
-        self.riff.write_to(w)
+        self.encode().write_to(w)?;
+        Ok(())
     }
 
     /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`

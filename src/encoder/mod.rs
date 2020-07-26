@@ -1,7 +1,8 @@
+use std::io::{Result, Write};
+
 use bytes::Bytes;
 
 mod read;
-
 pub use read::ImageEncoderReader;
 
 /// An iterator that returns the [`Bytes`][bytes::Bytes] making up the inner image.
@@ -50,8 +51,15 @@ pub struct ImageEncoder<I> {
 
 impl<I: EncodeAt> ImageEncoder<I> {
     /// Turns this `ImageEncoder` into a reader
+    #[inline]
     pub fn read(self) -> ImageEncoderReader<I> {
         ImageEncoderReader::from(self)
+    }
+
+    /// Writes this `ImageEncoder` into a writer
+    #[inline]
+    pub fn write_to<W: Write>(self, writer: W) -> Result<u64> {
+        self.read().write_to(writer)
     }
 }
 

@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 use std::fmt;
-use std::io::{self, Write};
+use std::io::Write;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
@@ -170,16 +170,18 @@ impl JpegSegment {
         }
     }
 
-    /// Encode this `JpegSegment` and write it to a Writer.
-    pub fn write_to(self, w: &mut dyn Write) -> io::Result<()> {
-        for item in self.encode() {
-            w.write_all(&item)?;
-        }
-
+    #[inline]
+    #[doc(hidden)]
+    #[deprecated(
+        since = "0.2.0",
+        note = "Please use JpegSegment::encode().write_to(writer)"
+    )]
+    pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
+        self.encode().write_to(w)?;
         Ok(())
     }
 
-    /// Returns an `Iterator` over the `Bytes` composing this `JpegSegment`
+    /// Returns an encoder for this `JpegSegment`
     #[inline]
     pub fn encode(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)
