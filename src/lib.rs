@@ -16,7 +16,6 @@
 //!
 //! ```rust,no_run
 //! # use std::fs::{self, File};
-//! # use std::io::{BufReader, BufWriter};
 //! # use img_parts::Result;
 //! # fn run() -> Result<()> {
 //! use img_parts::jpeg::Jpeg;
@@ -33,7 +32,7 @@
 //!
 //! jpeg.set_icc_profile(Some(another_icc_profile.into()));
 //! jpeg.set_exif(Some(new_exif_metadata.into()));
-//! jpeg.write_to(&mut BufWriter::new(output))?;
+//! jpeg.encoder().write_to(output)?;
 //! # Ok(())
 //! # }
 //! ```

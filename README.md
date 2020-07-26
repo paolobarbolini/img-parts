@@ -27,7 +27,7 @@ let exif_metadata = jpeg.exif();
 
 jpeg.set_icc_profile(Some(another_icc_profile.into()));
 jpeg.set_exif(Some(new_exif_metadata.into()));
-jpeg.write_to(&mut BufWriter::new(output))?;
+jpeg.encoder().write_to(output)?;
 ```
 
 ## License
