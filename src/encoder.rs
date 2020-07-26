@@ -2,6 +2,32 @@ use bytes::Bytes;
 
 /// An iterator that returns the [`Bytes`][bytes::Bytes] making up the inner image.
 ///
+/// The image containers are composed of multiple [`Bytes`][bytes::Bytes] that can't be put together
+/// without copying. If your usecase allows it use the `Iterator` in this `ImageEncoder` to stream
+/// the contents to your output.
+///
+/// For example if you are saving the file to disk you could do it like so:
+///
+/// ```rust,no_run
+/// # use std::io::{Result, Write};
+/// # use std::fs::File;
+/// # use bytes::Bytes;
+/// # use img_parts::{ImageEncoder};
+/// # use img_parts::riff::{RiffChunk, RiffContent};
+/// # fn run() -> Result<()> {
+/// // some RiffChunk just for this example
+/// // this would also work with anything else from this crate that implements `encode`
+/// let riff_chunk = RiffChunk::new([b'R', b'I', b'F', b'F'], RiffContent::Data(Bytes::new()));
+///
+/// let mut file = File::create("somefile.webp")?;
+/// let encoder = riff_chunk.encode();
+/// for chunk in encoder {
+///     file.write_all(&chunk)?;
+/// }
+/// # Ok(())
+/// # }
+/// ```
+///
 /// This struct is created by the `encode` method on
 ///
 /// * [`RiffChunk`][crate::riff::RiffContent::encode]
