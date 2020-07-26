@@ -1,4 +1,4 @@
-use std::io::{self, Read, Result, Write};
+use std::io::{Read, Result, Write};
 use std::mem;
 
 use bytes::Bytes;
@@ -14,8 +14,15 @@ pub struct ImageEncoderReader<I> {
 impl<I: EncodeAt> ImageEncoderReader<I> {
     /// Writes this `ImageEncoderReader` to a writer
     #[inline]
-    pub fn write_to<W: Write>(mut self, mut writer: W) -> Result<u64> {
-        io::copy(&mut self, &mut writer)
+    pub fn write_to<W: Write>(self, mut writer: W) -> Result<u64> {
+        let mut len = 0;
+
+        for chunk in self.inner {
+            len += chunk.len() as u64;
+            writer.write_all(&chunk)?;
+        }
+
+        Ok(len)
     }
 }
 
