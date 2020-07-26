@@ -46,7 +46,8 @@ impl<I: EncodeAt> Read for ImageEncoderReader<I> {
         }
 
         let to_read = if buf.len() > self.buf.len() {
-            mem::take(&mut self.buf)
+            // TODO: replace this with mem::take once 1.40 is our MSRV
+            mem::replace(&mut self.buf, Bytes::new())
         } else {
             self.buf.split_to(buf.len())
         };
