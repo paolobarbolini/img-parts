@@ -1,5 +1,9 @@
 use bytes::Bytes;
 
+mod read;
+
+pub use read::ImageEncoderReader;
+
 /// An iterator that returns the [`Bytes`][bytes::Bytes] making up the inner image.
 ///
 /// The image containers are composed of multiple [`Bytes`][bytes::Bytes] that can't be put together
@@ -42,6 +46,13 @@ use bytes::Bytes;
 pub struct ImageEncoder<I> {
     inner: I,
     pos: usize,
+}
+
+impl<I: EncodeAt> ImageEncoder<I> {
+    /// Turns this `ImageEncoder` into a reader
+    pub fn read(self) -> ImageEncoderReader<I> {
+        ImageEncoderReader::from(self)
+    }
 }
 
 impl<I: EncodeAt> Iterator for ImageEncoder<I> {

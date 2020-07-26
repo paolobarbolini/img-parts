@@ -39,7 +39,7 @@
 //! ```
 
 pub use common::{ImageEXIF, ImageICC};
-pub use encoder::ImageEncoder;
+pub use encoder::{ImageEncoder, ImageEncoderReader};
 pub use error::{Error, Result};
 pub(crate) use exif::EXIF_DATA_PREFIX;
 
