@@ -174,16 +174,16 @@ impl JpegSegment {
     #[doc(hidden)]
     #[deprecated(
         since = "0.2.0",
-        note = "Please use JpegSegment::encode().write_to(writer)"
+        note = "Please use JpegSegment::encoder().write_to(writer)"
     )]
     pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
-        self.encode().write_to(w)?;
+        self.encoder().write_to(w)?;
         Ok(())
     }
 
     /// Returns an encoder for this `JpegSegment`
     #[inline]
-    pub fn encode(self) -> ImageEncoder<Self> {
+    pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)
     }
 }

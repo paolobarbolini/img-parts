@@ -116,15 +116,15 @@ impl Jpeg {
 
     #[inline]
     #[doc(hidden)]
-    #[deprecated(since = "0.2.0", note = "Please use Jpeg::encode().write_to(writer)")]
+    #[deprecated(since = "0.2.0", note = "Please use Jpeg::encoder().write_to(writer)")]
     pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
-        self.encode().write_to(w)?;
+        self.encoder().write_to(w)?;
         Ok(())
     }
 
     /// Returns an encoder for this `Jpeg`
     #[inline]
-    pub fn encode(self) -> ImageEncoder<Self> {
+    pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)
     }
 }

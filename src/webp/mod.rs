@@ -205,19 +205,19 @@ impl WebP {
 
     #[inline]
     #[doc(hidden)]
-    #[deprecated(since = "0.2.0", note = "Please use WebP::encode().write_to(writer)")]
+    #[deprecated(since = "0.2.0", note = "Please use WebP::encoder().write_to(writer)")]
     pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
-        self.encode().write_to(w)?;
+        self.encoder().write_to(w)?;
         Ok(())
     }
 
     /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
     ///
-    /// Internally calls [`RiffChunk::encode`][crate::riff::RiffChunk::encode] on the
+    /// Internally calls [`RiffChunk::encoder`][crate::riff::RiffChunk::encoder] on the
     /// inner `RiffChunk`
     #[inline]
-    pub fn encode(self) -> ImageEncoder<RiffChunk> {
-        self.riff.encode()
+    pub fn encoder(self) -> ImageEncoder<RiffChunk> {
+        self.riff.encoder()
     }
 }
 

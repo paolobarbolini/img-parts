@@ -21,11 +21,11 @@ pub use read::ImageEncoderReader;
 /// # use img_parts::riff::{RiffChunk, RiffContent};
 /// # fn run() -> Result<()> {
 /// // some RiffChunk just for this example
-/// // this would also work with anything else from this crate that implements `encode`
+/// // this would also work with anything else from this crate that implements `encoder`
 /// let riff_chunk = RiffChunk::new([b'R', b'I', b'F', b'F'], RiffContent::Data(Bytes::new()));
 ///
 /// let mut file = File::create("somefile.webp")?;
-/// let encoder = riff_chunk.encode();
+/// let encoder = riff_chunk.encoder();
 /// for chunk in encoder {
 ///     file.write_all(&chunk)?;
 /// }
@@ -33,13 +33,13 @@ pub use read::ImageEncoderReader;
 /// # }
 /// ```
 ///
-/// This struct is created by the `encode` method on
+/// This struct is created by the `encoder` method on
 ///
-/// * [`RiffChunk`][crate::riff::RiffContent::encode]
-/// * [`RiffContent`][crate::riff::RiffContent::encode].
-/// * [`WebP`][crate::webp::WebP::encode].
-/// * [`Jpeg`][crate::jpeg::Jpeg::encode].
-/// * [`JpegSegment`][crate::jpeg::JpegSegment::encode].
+/// * [`RiffChunk`][crate::riff::RiffContent::encoder]
+/// * [`RiffContent`][crate::riff::RiffContent::encoder].
+/// * [`WebP`][crate::webp::WebP::encoder].
+/// * [`Jpeg`][crate::jpeg::Jpeg::encoder].
+/// * [`JpegSegment`][crate::jpeg::JpegSegment::encoder].
 ///
 /// See their documentation for more.
 #[derive(Clone)]

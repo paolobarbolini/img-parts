@@ -93,16 +93,16 @@ impl RiffChunk {
     #[doc(hidden)]
     #[deprecated(
         since = "0.2.0",
-        note = "Please use RiffChunk::encode().write_to(writer)"
+        note = "Please use RiffChunk::encoder().write_to(writer)"
     )]
     pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
-        self.encode().write_to(w)?;
+        self.encoder().write_to(w)?;
         Ok(())
     }
 
     /// Returns an encoder for this `RiffChunk`
     #[inline]
-    pub fn encode(self) -> ImageEncoder<Self> {
+    pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)
     }
 }
@@ -207,16 +207,16 @@ impl RiffContent {
     #[doc(hidden)]
     #[deprecated(
         since = "0.2.0",
-        note = "Please use RiffContent::encode().write_to(writer)"
+        note = "Please use RiffContent::encoder().write_to(writer)"
     )]
     pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
-        self.encode().write_to(w)?;
+        self.encoder().write_to(w)?;
         Ok(())
     }
 
     /// Returns an encoder for this `RiffContent`
     #[inline]
-    pub fn encode(self) -> ImageEncoder<Self> {
+    pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)
     }
 }
