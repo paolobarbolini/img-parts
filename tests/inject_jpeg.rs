@@ -27,7 +27,7 @@ fn inject_jpeg_noop(input: &str, icc: &str) {
     jpeg.set_icc_profile(Some(icc));
 
     let mut out = Vec::new();
-    jpeg.write_to(&mut out).expect("write jpeg");
+    jpeg.encoder().write_to(&mut out).expect("write jpeg");
     assert_eq!(out, file);
 }
 
@@ -39,7 +39,7 @@ fn inject_jpeg_result(input: &str, output: &str, icc: &str) {
     jpeg.set_icc_profile(Some(icc));
 
     let mut out = Vec::new();
-    jpeg.write_to(&mut out).expect("write jpeg");
+    jpeg.encoder().write_to(&mut out).expect("write jpeg");
 
     let expected =
         Bytes::from(fs::read(format!("tests/images/{}", output)).expect("read expected jpeg"));

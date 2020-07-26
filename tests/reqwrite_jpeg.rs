@@ -30,7 +30,7 @@ fn extract_jpeg_image(input: &str) {
     let jpeg_len = jpeg.len();
 
     let mut bytes = Vec::new();
-    jpeg.write_to(&mut bytes).expect("write jpeg");
+    jpeg.encoder().write_to(&mut bytes).expect("write jpeg");
     assert_eq!(file, bytes);
     assert_eq!(file.len(), jpeg_len);
 }

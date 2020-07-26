@@ -31,7 +31,7 @@ fn inject_webp_noop(input: &str, icc: &str) {
     webp.set_icc_profile(Some(icc));
 
     let mut out = Vec::new();
-    webp.write_to(&mut out).expect("write webp");
+    webp.encoder().write_to(&mut out).expect("write webp");
 
     assert_eq!(out, file);
 }
@@ -44,7 +44,7 @@ fn inject_webp_result(input: &str, output: &str, icc: &str) {
     webp.set_icc_profile(Some(icc));
 
     let mut out = Vec::new();
-    webp.write_to(&mut out).expect("write webp");
+    webp.encoder().write_to(&mut out).expect("write webp");
 
     let expected =
         Bytes::from(fs::read(format!("tests/images/{}", output)).expect("read expected webp"));

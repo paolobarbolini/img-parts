@@ -30,7 +30,7 @@ fn extract_webp_image(input: &str) {
     let webp_len = webp.len();
 
     let mut bytes = Vec::new();
-    webp.write_to(&mut bytes).expect("write webp");
+    webp.encoder().write_to(&mut bytes).expect("write webp");
     assert_eq!(file, bytes);
     assert_eq!(file.len(), webp_len as usize);
 }
