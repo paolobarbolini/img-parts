@@ -12,7 +12,13 @@ pub struct ImageEncoderReader<I> {
 }
 
 impl<I: EncodeAt> ImageEncoderReader<I> {
-    /// Writes this `ImageEncoderReader` to a writer
+    /// Writes this `ImageEncoderReader` into a writer
+    ///
+    /// Returns the number of bytes written.
+    ///
+    /// # Errors
+    ///
+    /// This methods fails if writing fails.
     #[inline]
     pub fn write_to<W: Write>(self, mut writer: W) -> Result<u64> {
         let mut len = 0;

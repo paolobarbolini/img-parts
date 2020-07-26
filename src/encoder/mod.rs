@@ -50,13 +50,19 @@ pub struct ImageEncoder<I> {
 }
 
 impl<I: EncodeAt> ImageEncoder<I> {
-    /// Turns this `ImageEncoder` into a reader
+    /// Turns this `ImageEncoder` into a reader that will never fail
     #[inline]
     pub fn read(self) -> ImageEncoderReader<I> {
         ImageEncoderReader::from(self)
     }
 
     /// Writes this `ImageEncoder` into a writer
+    ///
+    /// Returns the number of bytes written.
+    ///
+    /// # Errors
+    ///
+    /// This methods fails if writing fails.
     #[inline]
     pub fn write_to<W: Write>(self, writer: W) -> Result<u64> {
         self.read().write_to(writer)
