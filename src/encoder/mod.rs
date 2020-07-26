@@ -93,3 +93,120 @@ impl<I: EncodeAt> From<I> for ImageEncoder<I> {
 pub trait EncodeAt {
     fn encode_at(&self, pos: &mut usize) -> Option<Bytes>;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{EncodeAt, ImageEncoder};
+    use bytes::Bytes;
+    use std::io::Read;
+
+    struct FakeEncodeAt {
+        vec: Vec<Bytes>,
+    }
+
+    impl EncodeAt for FakeEncodeAt {
+        fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
+            self.vec.get(*pos).cloned()
+        }
+    }
+
+    #[test]
+    fn image_encoder_iter() {
+        let encoder_at = FakeEncodeAt {
+            vec: vec![
+                Bytes::from_static(b"abcd"),
+                Bytes::from_static(b"9876"),
+                Bytes::from_static(b"ducks!"),
+            ],
+        };
+        let mut encoder = ImageEncoder::from(encoder_at);
+
+        assert_eq!(Some(Bytes::from_static(b"abcd")), encoder.next());
+        assert_eq!(Some(Bytes::from_static(b"9876")), encoder.next());
+        assert_eq!(Some(Bytes::from_static(b"ducks!")), encoder.next());
+        assert!(encoder.next().is_none());
+    }
+
+    #[test]
+    fn image_encoder_read() {
+        let encoder_at = FakeEncodeAt {
+            vec: vec![
+                Bytes::from_static(b"abcd"),
+                Bytes::from_static(b"9876"),
+                Bytes::from_static(b"duck!"),
+            ],
+        };
+        let encoder = ImageEncoder::from(encoder_at);
+        let mut reader = encoder.read();
+
+        let expected = [
+            Bytes::from_static(b"abcd"),
+            Bytes::from_static(b"9876"),
+            Bytes::from_static(b"duck!"),
+        ];
+
+        for exp in &expected {
+            let mut buf = [0; 32];
+            let read = reader.read(&mut buf).expect("read something");
+
+            assert_eq!(exp, &buf[..read]);
+        }
+
+        let mut buf = [0; 32];
+        let read = reader.read(&mut buf).expect("read nothing");
+        assert_eq!(0, read);
+        assert_eq!([0; 32], buf);
+    }
+
+    #[test]
+    fn image_encoder_read_buffered() {
+        let encoder_at = FakeEncodeAt {
+            vec: vec![
+                Bytes::from_static(b"abcd"),
+                Bytes::from_static(b"9876"),
+                Bytes::from_static(b"duck!"),
+            ],
+        };
+        let encoder = ImageEncoder::from(encoder_at);
+        let mut reader = encoder.read();
+
+        let expected = [
+            Bytes::from_static(b"ab"),
+            Bytes::from_static(b"cd"),
+            Bytes::from_static(b"98"),
+            Bytes::from_static(b"76"),
+            Bytes::from_static(b"du"),
+            Bytes::from_static(b"ck"),
+            Bytes::from_static(b"!"),
+        ];
+
+        for exp in &expected {
+            let mut buf = [0; 2];
+            let read = reader.read(&mut buf).expect("read something");
+
+            assert_eq!(exp, &buf[..read]);
+        }
+
+        let mut buf = [0; 32];
+        let read = reader.read(&mut buf).expect("read nothing");
+        assert_eq!(0, read);
+        assert_eq!([0; 32], buf);
+    }
+
+    #[test]
+    fn image_encoder_write_to() {
+        let encoder_at = FakeEncodeAt {
+            vec: vec![
+                Bytes::from_static(b"abcd"),
+                Bytes::from_static(b"9876"),
+                Bytes::from_static(b"duck!"),
+            ],
+        };
+        let encoder = ImageEncoder::from(encoder_at);
+
+        let mut vec = Vec::new();
+        let written = encoder.write_to(&mut vec).expect("write_to");
+        assert_eq!(written, 13);
+        assert_eq!(vec, b"abcd9876duck!");
+    }
+}
