@@ -1,10 +1,10 @@
 use std::io::{self, Write};
-use std::iter;
 
 use bytes::{Buf, Bytes, BytesMut};
 
 use super::markers;
 use super::JpegSegment;
+use crate::encoder::{EncodeAt, ImageEncoder};
 use crate::{Error, ImageEXIF, ImageICC, Result};
 
 // segment size (2 byte) - segment meta (14 byte)
@@ -124,14 +124,31 @@ impl Jpeg {
     }
 
     /// Returns an `Iterator` over the `Bytes` composing this `Jpeg`
-    pub fn encode(self) -> impl Iterator<Item = Bytes> {
-        let header = Bytes::from_static(&[markers::P, markers::SOI]);
+    #[inline]
+    pub fn encode(self) -> ImageEncoder<Self> {
+        ImageEncoder::new(self)
+    }
+}
 
-        iter::once(header).chain(
-            self.segments
-                .into_iter()
-                .flat_map(|segment| segment.encode()),
-        )
+impl EncodeAt for Jpeg {
+    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
+        match pos {
+            0 => {
+                let vec = Bytes::from_static(&[markers::P, markers::SOI]);
+                Some(vec)
+            }
+            _ => {
+                *pos -= 1;
+
+                for segment in &self.segments {
+                    if let Some(bytes) = segment.encode_at(pos) {
+                        return Some(bytes);
+                    }
+                }
+
+                None
+            }
+        }
     }
 }
 

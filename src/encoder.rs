@@ -33,6 +33,7 @@ use bytes::Bytes;
 /// * [`RiffChunk`][crate::riff::RiffContent::encode]
 /// * [`RiffContent`][crate::riff::RiffContent::encode].
 /// * [`WebP`][crate::webp::WebP::encode].
+/// * [`Jpeg`][crate::jpeg::Jpeg::encode].
 /// * [`JpegSegment`][crate::jpeg::JpegSegment::encode].
 ///
 /// See their documentation for more.
