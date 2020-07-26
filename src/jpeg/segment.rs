@@ -179,13 +179,31 @@ impl JpegSegment {
     }
 
     /// Returns an `Iterator` over the `Bytes` composing this `JpegSegment`
-    pub fn encode(self) -> impl Iterator<Item = Bytes> {
-        let mut vec = BytesMut::with_capacity(4);
-        vec.put_u8(markers::P);
-        vec.put_u8(self.marker());
-        vec.put_u16((self.len() - 2).try_into().unwrap());
+    pub fn encode(self) -> JpegSegmentIter {
+        JpegSegmentIter {
+            inner: self,
+            pos: 0,
+        }
+    }
 
-        vec![vec.freeze(), self.contents, self.entropy].into_iter()
+    /// Returns an `Iterator` over the `Bytes` composing this `JpegSegment`
+    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
+        match pos {
+            0 => {
+                let mut vec = BytesMut::with_capacity(4);
+                vec.put_u8(markers::P);
+                vec.put_u8(self.marker());
+                vec.put_u16((self.len() - 2).try_into().unwrap());
+
+                Some(vec.freeze())
+            }
+            1 if !self.contents.is_empty() => Some(self.contents.clone()),
+            2 if !self.entropy.is_empty() => Some(self.entropy.clone()),
+            _ => {
+                *pos -= 1 + !self.contents.is_empty() as usize + !self.entropy.is_empty() as usize;
+                None
+            }
+        }
     }
 }
 
@@ -194,5 +212,31 @@ impl fmt::Debug for JpegSegment {
         f.debug_struct("JpegSegment")
             .field("marker", &self.marker)
             .finish()
+    }
+}
+
+/// An iterator that returns the [`Bytes`][bytes::Bytes] making up the [`JpegSegment`][JpegSegment]
+///
+/// This struct is created by the [encode][JpegSegment::encode] method on
+/// [`JpegSegment`][JpegSegment]. See its documentation for more.
+#[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct JpegSegmentIter {
+    inner: JpegSegment,
+    pos: usize,
+}
+
+impl Iterator for JpegSegmentIter {
+    type Item = Bytes;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut pos = self.pos;
+        let item = self.inner.encode_at(&mut pos);
+
+        if item.is_some() {
+            self.pos += 1;
+        }
+
+        item
     }
 }
