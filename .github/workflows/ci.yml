@@ -25,7 +25,7 @@ jobs:
 
       - name: cargo fmt -- --check
         run: |
-          cargo fmt args: -- --check
+          cargo fmt -- --check
 
   clippy:
     name: clippy / linux / stable
@@ -42,7 +42,7 @@ jobs:
 
       - name: cargo clippy
         run: |
-          clippy --all --examples
+          cargo clippy --all --examples
 
   test:
     name: test / ${{ matrix.name }}
