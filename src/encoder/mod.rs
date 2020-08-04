@@ -1,6 +1,6 @@
 use std::io::{Result, Write};
 
-use bytes::Bytes;
+use bytes::{Bytes, BytesMut};
 
 mod read;
 pub use read::ImageEncoderReader;
@@ -66,6 +66,20 @@ impl<I: EncodeAt> ImageEncoder<I> {
     #[inline]
     pub fn write_to<W: Write>(self, writer: W) -> Result<u64> {
         self.read().write_to(writer)
+    }
+
+    /// Takes the pieces composing this `ImageEncoder` and copies
+    /// them into a linear piece of memory.
+    ///
+    /// If possible [`write_to`][Self::write_to] should be used instead,
+    /// since it avoids creating a copy of the entire file.
+    pub fn bytes(self) -> Bytes {
+        let mut bytes = BytesMut::new();
+        for piece in self {
+            bytes.extend_from_slice(&piece);
+        }
+
+        bytes.freeze()
     }
 }
 
