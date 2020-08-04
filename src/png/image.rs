@@ -62,11 +62,8 @@ impl Png {
     }
 
     /// Get every chunk with a marker of `marker`
-    pub fn chunks_by_kind(&self, kind: [u8; 4]) -> Vec<&PngChunk> {
-        self.chunks
-            .iter()
-            .filter(|chunk| chunk.kind() == kind)
-            .collect()
+    pub fn chunks_by_kind(&self, kind: [u8; 4]) -> impl Iterator<Item = &PngChunk> {
+        self.chunks.iter().filter(move |chunk| chunk.kind() == kind)
     }
 
     /// Get the total size of the `Png` once it is encoded.

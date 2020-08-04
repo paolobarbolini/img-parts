@@ -182,11 +182,8 @@ impl WebP {
     }
 
     /// Get every chunk with an id of `id`.
-    pub fn chunks_by_id(&self, id: [u8; 4]) -> Vec<&RiffChunk> {
-        self.chunks()
-            .iter()
-            .filter(|chunk| chunk.id() == id)
-            .collect()
+    pub fn chunks_by_id(&self, id: [u8; 4]) -> impl Iterator<Item = &RiffChunk> {
+        self.chunks().iter().filter(move |chunk| chunk.id() == id)
     }
 
     /// Remove every chunk with an id of `id`

@@ -92,11 +92,10 @@ impl Jpeg {
     }
 
     /// Get every segment with a marker of `marker`
-    pub fn segments_by_marker(&self, marker: u8) -> Vec<&JpegSegment> {
+    pub fn segments_by_marker(&self, marker: u8) -> impl Iterator<Item = &JpegSegment> {
         self.segments
             .iter()
-            .filter(|segment| segment.marker() == marker)
-            .collect()
+            .filter(move |segment| segment.marker() == marker)
     }
 
     /// Get the total size of the `Jpeg` once it is encoded.
