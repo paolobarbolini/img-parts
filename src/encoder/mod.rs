@@ -49,6 +49,8 @@ pub use read::ImageEncoderReader;
 /// * [`WebP`][crate::webp::WebP::encoder].
 /// * [`Jpeg`][crate::jpeg::Jpeg::encoder].
 /// * [`JpegSegment`][crate::jpeg::JpegSegment::encoder].
+/// * [`Png`][crate::png::Png::encoder].
+/// * [`PngChunk`][crate::png::PngChunk::encoder].
 ///
 /// See their documentation for more.
 #[derive(Clone)]

@@ -6,7 +6,7 @@ description = "Low level crate for reading and writing Jpeg and RIFF image conta
 license = "MIT/Apache-2.0"
 repository = "https://github.com/paolobarbolini/img-parts"
 categories = ["multimedia::images", "multimedia::encoding", "parser-implementations"]
-keywords = ["jpeg", "webp", "parser", "icc", "exif"]
+keywords = ["jpeg", "png", "parser", "icc", "exif"]
 readme = "README.md"
 edition = "2018"
 

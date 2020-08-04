@@ -7,9 +7,9 @@
 //! The `img-parts` crate provides a low level api for reading and
 //! writing containers from various image formats.
 //!
-//! It currently supports [`Jpeg`][crate::jpeg::Jpeg] and
-//! [`RIFF`][crate::riff::RiffChunk] (with some helper functions
-//! for [`WebP`][crate::webp::WebP]).
+//! It currently supports [`Jpeg`][crate::jpeg::Jpeg],
+//! [`Png`][crate::png::Png] and [`RIFF`][crate::riff::RiffChunk]
+//! (with some helper functions for [`WebP`][crate::webp::WebP]).
 //!
 //! With it you can read an image, modify its sections and save it
 //! back.
@@ -47,6 +47,7 @@ mod encoder;
 mod error;
 mod exif;
 pub mod jpeg;
+pub mod png;
 pub mod riff;
 pub(crate) mod util;
 pub mod vp8;
