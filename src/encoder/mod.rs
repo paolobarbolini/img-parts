@@ -15,7 +15,7 @@ pub use read::ImageEncoderReader;
 ///
 /// Those chunks can be accessed through an `Iterator`, similar to how
 /// [futures::stream::Stream of Bytes][stream] are used in asyncronous networking programs.
-/// A [`write_to`][ImageEncoder::write_to] method is also provided, which calls 
+/// A [`write_to`][ImageEncoder::write_to] method is also provided, which calls
 /// [`write_all`][write_all] for every chunk returned by the Iterator.
 /// The [`bytes`][ImageEncoder::bytes] method is provided for cases where the image has to
 /// fit into a linear piece of memory
@@ -72,9 +72,15 @@ impl<I: EncodeAt> ImageEncoder<I> {
     /// # Errors
     ///
     /// This methods fails if writing fails.
-    #[inline]
-    pub fn write_to<W: Write>(self, writer: W) -> Result<u64> {
-        self.read().write_to(writer)
+    pub fn write_to<W: Write>(self, mut writer: W) -> Result<u64> {
+        let mut len = 0;
+
+        for chunk in self {
+            len += chunk.len() as u64;
+            writer.write_all(&chunk)?;
+        }
+
+        Ok(len)
     }
 
     /// Returns the entire `ImageEncoder` in a single linear piece of memory
