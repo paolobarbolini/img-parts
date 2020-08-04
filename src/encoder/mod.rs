@@ -7,11 +7,23 @@ pub use read::ImageEncoderReader;
 
 /// An iterator that returns the [`Bytes`][bytes::Bytes] making up the inner image.
 ///
-/// The image containers are composed of multiple [`Bytes`][bytes::Bytes] that can't be put together
-/// without copying. If your usecase allows it use the `Iterator` in this `ImageEncoder` to stream
-/// the contents to your output.
+/// As image containers contain multiple _chunks_, each one with a piece of memory representing
+/// the chunk itself, the representation of the entire file is fragmented in memory.
+/// This crate tries to be as efficient as possible with memory, by giving access to
+/// the underlying fragmented chunks representing the full file, which can then be written or
+/// streamed piece by piece.
 ///
-/// For example if you are saving the file to disk you could do it like so:
+/// Those chunks can be accessed through an `Iterator`, similar to how
+/// [futures::stream::Stream of Bytes][stream] are used in asyncronous networking programs.
+/// A [`write_to`][ImageEncoder::write_to] method is also provided, which calls 
+/// [`write_all`][write_all] for every chunk returned by the Iterator.
+/// The [`bytes`][ImageEncoder::bytes] method is provided for cases where the image has to
+/// fit into a linear piece of memory
+///
+/// [write_all]: std::io::Write::write_all
+/// [stream]: https://docs.rs/futures-core/0.3/futures_core/stream/trait.Stream.html
+///
+/// For example saving the file to disk could be done like so:
 ///
 /// ```rust,no_run
 /// # use std::io::{Result, Write};
@@ -24,11 +36,8 @@ pub use read::ImageEncoderReader;
 /// // this would also work with anything else from this crate that implements `encoder`
 /// let riff_chunk = RiffChunk::new([b'R', b'I', b'F', b'F'], RiffContent::Data(Bytes::new()));
 ///
-/// let mut file = File::create("somefile.webp")?;
-/// let encoder = riff_chunk.encoder();
-/// for chunk in encoder {
-///     file.write_all(&chunk)?;
-/// }
+/// let file = File::create("somefile.webp")?;
+/// riff_chunk.encoder().write_to(file);
 /// # Ok(())
 /// # }
 /// ```
@@ -68,11 +77,13 @@ impl<I: EncodeAt> ImageEncoder<I> {
         self.read().write_to(writer)
     }
 
+    /// Returns the entire `ImageEncoder` in a single linear piece of memory
+    ///
     /// Takes the pieces composing this `ImageEncoder` and copies
     /// them into a linear piece of memory.
     ///
     /// If possible [`write_to`][Self::write_to] should be used instead,
-    /// since it avoids creating a copy of the entire file.
+    /// since it avoids creating a second in memory copy of the file.
     pub fn bytes(self) -> Bytes {
         let mut bytes = BytesMut::new();
         for piece in self {
