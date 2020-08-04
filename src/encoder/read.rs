@@ -6,6 +6,8 @@ use bytes::Bytes;
 use super::{EncodeAt, ImageEncoder};
 
 /// A reader for `ImageEncoder`
+///
+/// This struct is created by the [`read`][ImageEncoder::read] method on [`ImageEncoder`][ImageEncoder]
 pub struct ImageEncoderReader<I> {
     inner: ImageEncoder<I>,
     buf: Bytes,
