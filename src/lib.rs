@@ -40,12 +40,12 @@
 pub use common::{ImageEXIF, ImageICC};
 pub use encoder::{ImageEncoder, ImageEncoderReader};
 pub use error::{Error, Result};
-pub(crate) use exif::EXIF_DATA_PREFIX;
+
+pub(crate) const EXIF_DATA_PREFIX: &[u8] = b"Exif\0\0";
 
 mod common;
 mod encoder;
 mod error;
-mod exif;
 pub mod jpeg;
 pub mod png;
 pub mod riff;
