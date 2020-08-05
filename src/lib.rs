@@ -37,12 +37,14 @@
 //! # }
 //! ```
 
+pub use common::DynImage;
 pub use encoder::{ImageEncoder, ImageEncoderReader};
 pub use error::{Error, Result};
 pub use traits::{ImageEXIF, ImageICC};
 
 pub(crate) const EXIF_DATA_PREFIX: &[u8] = b"Exif\0\0";
 
+mod common;
 mod encoder;
 mod error;
 pub mod jpeg;

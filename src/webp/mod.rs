@@ -23,6 +23,10 @@ pub const CHUNK_VP8L: [u8; 4] = [b'V', b'P', b'8', b'L'];
 pub const CHUNK_VP8X: [u8; 4] = [b'V', b'P', b'8', b'X'];
 pub const CHUNK_XMP: [u8; 4] = [b'X', b'M', b'P', b' '];
 
+pub(crate) fn is_webp(buf: &[u8]) -> bool {
+    buf.len() > 12 && &buf[..4] == b"RIFF" && &buf[8..12] == b"WEBP"
+}
+
 /// The representation of a WebP image.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WebP {
@@ -207,6 +211,10 @@ impl WebP {
     #[inline]
     pub fn encoder(self) -> ImageEncoder<RiffChunk> {
         self.riff.encoder()
+    }
+
+    pub(crate) fn inner(&self) -> &RiffChunk {
+        &self.riff
     }
 }
 
