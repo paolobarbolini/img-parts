@@ -6,7 +6,7 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crc32fast::Hasher;
 
 use crate::encoder::{EncodeAt, ImageEncoder};
-use crate::Result;
+use crate::{Error, Result};
 
 /// The representation of a chunk making up a [`Png`][super::Png]
 #[derive(Clone, PartialEq)]
@@ -20,7 +20,7 @@ pub struct PngChunk {
 impl PngChunk {
     /// Construct an new `PngChunk`
     pub fn new(kind: [u8; 4], contents: Bytes) -> PngChunk {
-        let crc = crc(kind, &contents);
+        let crc = compute_crc(kind, &contents);
         Self::new_with_crc(kind, contents, crc)
     }
 
@@ -52,6 +52,11 @@ impl PngChunk {
 
         let kind = kind.as_ref().try_into().unwrap();
         let crc = crc.as_ref().try_into().unwrap();
+
+        if crc != compute_crc(kind, &contents) {
+            return Err(Error::BadCRC);
+        }
+
         Ok(PngChunk::new_with_crc(kind, contents, crc))
     }
 
@@ -115,7 +120,7 @@ impl fmt::Debug for PngChunk {
 }
 
 /// Compute the `crc` for a `PngChunk`
-fn crc(kind: [u8; 4], contents: &[u8]) -> [u8; 4] {
+fn compute_crc(kind: [u8; 4], contents: &[u8]) -> [u8; 4] {
     let mut hasher = Hasher::new();
     hasher.update(&kind);
     hasher.update(contents);

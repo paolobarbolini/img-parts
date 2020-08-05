@@ -10,16 +10,20 @@ pub enum Error {
 
     /// The file signature didn't match the expected signature
     WrongSignature,
+
+    /// The chunk CRC didn't match the expected calculated CRC
+    BadCRC,
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::Io(ref err) => err.fmt(f),
+            Self::Io(ref err) => err.fmt(f),
 
-            Error::WrongSignature => {
-                write!(f, "the file signature didn't match the expected signature")
+            Self::WrongSignature => {
+                f.write_str("the file signature didn't match the expected signature")
             }
+            Self::BadCRC => f.write_str("the chunk CRC didn't match the expected calculated CRC"),
         }
     }
 }
