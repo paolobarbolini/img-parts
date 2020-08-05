@@ -152,29 +152,29 @@ impl EncodeAt for Jpeg {
 
 impl ImageICC for Jpeg {
     fn icc_profile(&self) -> Option<Bytes> {
-        let mut icc_parts: Vec<(u8, u8, Bytes)> = self
-            .segments
-            .iter()
-            .filter_map(|segment| segment.icc())
-            .collect();
+        let mut icc_parts = self.segments.iter().filter_map(|segment| segment.icc());
 
-        if icc_parts.is_empty() {
-            None
-        } else if icc_parts.len() == 1 {
-            Some(icc_parts[0].2.clone())
-        } else {
-            // sort by seqno
-            icc_parts.sort_by(|a, b| a.0.cmp(&b.0));
+        let first = icc_parts.next()?;
+        let second = match icc_parts.next() {
+            Some(second) => second,
+            None => return Some(first.2),
+        };
 
-            let len = icc_parts.iter().map(|part| part.2.len()).sum::<usize>();
-            let mut sequence = BytesMut::with_capacity(len);
+        let mut icc_parts: Vec<(u8, u8, Bytes)> = icc_parts.collect();
+        icc_parts.push(first);
+        icc_parts.push(second);
 
-            for part in icc_parts {
-                sequence.extend(part.2);
-            }
+        // sort by seqno
+        icc_parts.sort_by(|a, b| a.0.cmp(&b.0));
 
-            Some(sequence.freeze())
+        let len = icc_parts.iter().map(|part| part.2.len()).sum::<usize>();
+        let mut sequence = BytesMut::with_capacity(len);
+
+        for part in icc_parts {
+            sequence.extend(part.2);
         }
+
+        Some(sequence.freeze())
     }
 
     fn set_icc_profile(&mut self, profile: Option<Bytes>) {
