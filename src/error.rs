@@ -1,3 +1,4 @@
+use std::error::Error as StdError;
 use std::fmt;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -26,3 +27,5 @@ impl fmt::Display for Error {
         }
     }
 }
+
+impl StdError for Error {}
