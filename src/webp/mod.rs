@@ -126,7 +126,7 @@ impl WebP {
     ///
     /// Otherwise the dimension is read from the VP8 bitstream header.
     pub fn dimensions(&self) -> Option<(u32, u32)> {
-        if let Ok(vp8x) = self.chunk_by_id(CHUNK_VP8X) {
+        if let Some(vp8x) = self.chunk_by_id(CHUNK_VP8X) {
             if let Some(data) = vp8x.content().data() {
                 if let Some(range) = data.get(2..8) {
                     let width = u24_from_le_bytes(range[0..3].try_into().unwrap()) + 1;
@@ -136,7 +136,7 @@ impl WebP {
             }
         }
 
-        if let Ok(vp8) = self.chunk_by_id(CHUNK_VP8) {
+        if let Some(vp8) = self.chunk_by_id(CHUNK_VP8) {
             let (width, height) = size_from_vp8_header(&vp8.content().data()?);
             return Some((width as u32, height as u32));
         }
@@ -165,20 +165,12 @@ impl WebP {
     /// Check if there's a chunk with an id of `id`.
     #[inline]
     pub fn has_chunk(&self, id: [u8; 4]) -> bool {
-        self.chunk_by_id(id).is_ok()
+        self.chunk_by_id(id).is_some()
     }
 
     /// Get the first chunk with an id of `id`.
-    ///
-    /// # Errors
-    ///
-    /// This method fails with [`Error::NoChunk`][crate::Error::NoChunk]
-    /// if a chunk with an id of `id` isn't found.
-    pub fn chunk_by_id(&self, id: [u8; 4]) -> Result<&RiffChunk> {
-        self.chunks()
-            .iter()
-            .find(|chunk| chunk.id() == id)
-            .ok_or_else(|| Error::NoChunk(id))
+    pub fn chunk_by_id(&self, id: [u8; 4]) -> Option<&RiffChunk> {
+        self.chunks().iter().find(|chunk| chunk.id() == id)
     }
 
     /// Get every chunk with an id of `id`.
@@ -220,7 +212,7 @@ impl WebP {
 
 impl ImageICC for WebP {
     fn icc_profile(&self) -> Option<Bytes> {
-        self.chunk_by_id(CHUNK_ICCP).ok()?.content().data()
+        self.chunk_by_id(CHUNK_ICCP)?.content().data()
     }
 
     fn set_icc_profile(&mut self, profile: Option<Bytes>) {
@@ -251,8 +243,7 @@ impl ImageICC for WebP {
 
 impl ImageEXIF for WebP {
     fn exif(&self) -> Option<Bytes> {
-        self.chunk_by_id(CHUNK_EXIF)
-            .ok()?
+        self.chunk_by_id(CHUNK_EXIF)?
             .content()
             .data()
             .map(|b| b.slice(6..))

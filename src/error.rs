@@ -10,9 +10,6 @@ pub enum Error {
 
     /// The file signature didn't match the expected signature
     WrongSignature,
-
-    /// A chunk of id `id` wasn't found.
-    NoChunk([u8; 4]),
 }
 
 impl fmt::Display for Error {
@@ -23,7 +20,6 @@ impl fmt::Display for Error {
             Error::WrongSignature => {
                 write!(f, "the file signature didn't match the expected signature")
             }
-            Error::NoChunk(id) => write!(f, "no chunk of id: {:X?}", id),
         }
     }
 }
