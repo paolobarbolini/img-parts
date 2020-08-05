@@ -3,7 +3,7 @@ use std::fmt;
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// The Errors that may occur when processing an image.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     /// The file signature didn't match the expected signature
     WrongSignature,

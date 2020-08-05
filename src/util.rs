@@ -80,11 +80,14 @@ mod tests {
     fn read_u8_checked() {
         let mut buf = Bytes::from_static(&[0x00, 0x01, 0x02]);
 
-        assert_eq!(read_checked(&mut buf, |buf| buf.get_u8()).unwrap(), 0x00);
-        assert_eq!(read_checked(&mut buf, |buf| buf.get_u8()).unwrap(), 0x01);
-        assert_eq!(read_checked(&mut buf, |buf| buf.get_u8()).unwrap(), 0x02);
+        assert_eq!(read_checked(&mut buf, |buf| buf.get_u8()), Ok(0x00));
+        assert_eq!(read_checked(&mut buf, |buf| buf.get_u8()), Ok(0x01));
+        assert_eq!(read_checked(&mut buf, |buf| buf.get_u8()), Ok(0x02));
 
-        assert!(read_checked(&mut buf, |buf| buf.get_u8()).is_err());
+        assert_eq!(
+            read_checked(&mut buf, |buf| buf.get_u8()),
+            Err(Error::Truncated)
+        );
     }
 
     #[test]
@@ -92,14 +95,14 @@ mod tests {
         let mut buf = Bytes::from_static(&[0x00, 0x01, 0x02, 0x03]);
 
         assert_eq!(
-            split_to_checked(&mut buf, 2).unwrap().as_ref(),
-            &[0x00, 0x01]
+            split_to_checked(&mut buf, 2).as_ref(),
+            Ok(&Bytes::from_static(&[0x00, 0x01]))
         );
         assert_eq!(
-            split_to_checked(&mut buf, 2).unwrap().as_ref(),
-            &[0x02, 0x03]
+            split_to_checked(&mut buf, 2).as_ref(),
+            Ok(&Bytes::from_static(&[0x02, 0x03]))
         );
 
-        assert!(split_to_checked(&mut buf, 2).is_err());
+        assert_eq!(split_to_checked(&mut buf, 2), Err(Error::Truncated));
     }
 }
