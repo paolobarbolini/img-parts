@@ -1,13 +1,18 @@
 use std::io;
 
-use bytes::{Buf, Bytes};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
+use miniz_oxide::deflate::compress_to_vec_zlib;
+use miniz_oxide::inflate::decompress_to_vec_zlib;
 
 use super::PngChunk;
 use crate::encoder::{EncodeAt, ImageEncoder};
-use crate::{Error, Result};
+use crate::{Error, ImageEXIF, ImageICC, Result};
 
 // the 8 byte signature
 const SIGNATURE: &[u8] = &[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+pub const CHUNK_ICCP: [u8; 4] = [b'i', b'C', b'C', b'P'];
+pub const CHUNK_EXIF: [u8; 4] = [b'e', b'X', b'I', b'f'];
 
 /// The representation of a Png image.
 #[derive(Debug, Clone, PartialEq)]
@@ -104,6 +109,62 @@ impl EncodeAt for Png {
 
                 None
             }
+        }
+    }
+}
+
+// http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html#C.iCCP
+impl ImageICC for Png {
+    fn icc_profile(&self) -> Option<Bytes> {
+        let mut contents = self
+            .chunk_by_type(CHUNK_ICCP)
+            .map(|chunk| chunk.contents().clone())?;
+
+        // skip profile name and null separator
+        while contents.get_u8() != 0 {}
+
+        // check that the compression method is zlib
+        if contents.get_u8() != 0 {
+            return None;
+        }
+
+        decompress_to_vec_zlib(&contents).ok().map(Bytes::from)
+    }
+
+    fn set_icc_profile(&mut self, profile: Option<Bytes>) {
+        self.remove_chunks_by_type(CHUNK_ICCP);
+
+        if let Some(profile) = profile {
+            let mut contents = BytesMut::with_capacity(profile.len());
+            // profile name
+            contents.extend_from_slice(b"icc");
+            // null separator
+            contents.put_u8(0);
+            // compression method
+            contents.put_u8(0);
+            // compressed profile
+            let compressed = compress_to_vec_zlib(&profile, 10);
+            contents.extend_from_slice(&compressed);
+
+            let chunk = PngChunk::new(CHUNK_ICCP, contents.freeze());
+            self.chunks.insert(1, chunk);
+        }
+    }
+}
+
+// https://ftp-osl.osuosl.org/pub/libpng/documents/pngext-1.5.0.html#C.eXIf
+impl ImageEXIF for Png {
+    fn exif(&self) -> Option<Bytes> {
+        self.chunk_by_type(CHUNK_EXIF)
+            .map(|chunk| chunk.contents().clone())
+    }
+
+    fn set_exif(&mut self, exif: Option<Bytes>) {
+        self.remove_chunks_by_type(CHUNK_EXIF);
+
+        if let Some(exif) = exif {
+            let chunk = PngChunk::new(CHUNK_EXIF, exif);
+            self.chunks.insert(1, chunk);
         }
     }
 }

@@ -17,6 +17,7 @@ exclude = [
 [dependencies]
 bytes = "0.5.3"
 crc32fast = "1.1.1"
+miniz_oxide = "0.4"
 
 [package.metadata.docs.rs]
 targets = []
