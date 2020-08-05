@@ -2,7 +2,7 @@
 name = "img-parts"
 version = "0.1.1" # remember to update html_root_url and README.md
 authors = ["Paolo Barbolini <paolo@paolo565.org>"]
-description = "Low level crate for reading and writing Jpeg and RIFF image containers"
+description = "Low level crate for reading and writing Jpeg, Png and RIFF image containers"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/paolobarbolini/img-parts"
 categories = ["multimedia::images", "multimedia::encoding", "parser-implementations"]
