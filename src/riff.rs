@@ -35,11 +35,12 @@ impl RiffChunk {
         RiffChunk { id, content }
     }
 
-    /// Create a new `RiffChunk` from a Reader.
+    /// Create a new `RiffChunk` image from a Reader.
     ///
     /// # Errors
     ///
-    /// This method fails if reading fails or if the file signature is invalid.
+    /// This method fails if the file signature doesn't match or one
+    /// of the chunks is corrupted or truncated.
     #[inline]
     pub fn from_bytes(mut b: Bytes) -> Result<RiffChunk> {
         RiffChunk::from_bytes_impl(&mut b, true)

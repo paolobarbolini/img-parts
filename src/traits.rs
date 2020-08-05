@@ -1,6 +1,6 @@
 use bytes::Bytes;
 
-/// Trait to get, add and remove the ICC Profile of an image.
+/// Trait to read and write the raw ICC Profile for an image
 pub trait ImageICC {
     /// Get the raw ICC Profile of this image
     fn icc_profile(&self) -> Option<Bytes>;
@@ -12,7 +12,7 @@ pub trait ImageICC {
     fn set_icc_profile(&mut self, profile: Option<Bytes>);
 }
 
-/// Trait to get, add and remove the EXIF metadata of an image.
+/// Trait to read and write the raw EXIF metadata for an image
 pub trait ImageEXIF {
     /// Get the raw EXIF metadata of this image
     fn exif(&self) -> Option<Bytes>;

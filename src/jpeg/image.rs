@@ -21,12 +21,12 @@ pub struct Jpeg {
 
 #[allow(clippy::len_without_is_empty)]
 impl Jpeg {
-    /// Create a new `Jpeg` image from a Reader.
+    /// Create a `Jpeg` from `Bytes`
     ///
     /// # Errors
     ///
-    /// This method fails if reading fails or if the first two bytes
-    /// aren't a SOI marker.
+    /// This method fails if the file signature doesn't match or if
+    /// it is corrupted or truncated.
     pub fn from_bytes(mut b: Bytes) -> Result<Jpeg> {
         let b0 = b.get_u8();
         let b1 = b.get_u8();
@@ -72,13 +72,13 @@ impl Jpeg {
         Ok(Jpeg { segments })
     }
 
-    /// Get the segments of this `Jpeg`.
+    /// Get the segments of this `Jpeg`
     #[inline]
     pub fn segments(&self) -> &Vec<JpegSegment> {
         &self.segments
     }
 
-    /// Get a mutable reference to the segments of this `Jpeg`.
+    /// Get a mutable reference to the segments of this `Jpeg`
     #[inline]
     pub fn segments_mut(&mut self) -> &mut Vec<JpegSegment> {
         &mut self.segments
@@ -98,7 +98,7 @@ impl Jpeg {
             .filter(move |segment| segment.marker() == marker)
     }
 
-    /// Get the total size of the `Jpeg` once it is encoded.
+    /// Get the total size of the `Jpeg` once it is encoded
     ///
     /// The size is the sum of:
     ///
@@ -121,7 +121,7 @@ impl Jpeg {
         Ok(())
     }
 
-    /// Returns an encoder for this `Jpeg`
+    /// Create an [encoder][crate::ImageEncoder] for this `Jpeg`
     #[inline]
     pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)

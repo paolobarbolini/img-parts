@@ -16,9 +16,13 @@ pub enum DynImage {
 #[allow(clippy::len_without_is_empty)]
 impl DynImage {
     /// Tries to infer the file type from the file signature and calls
-    /// the `from_bytes` method for the inferred format.
+    /// the `from_bytes` method for the inferred format
     ///
     /// Returns `Ok(None)` if the format isn't supported.
+    ///
+    /// # Errors
+    ///
+    /// This method fails if the file is corrupted or truncated.
     pub fn from_bytes(b: Bytes) -> Result<Option<DynImage>> {
         if is_jpeg(&b) {
             let jpeg = Jpeg::from_bytes(b)?;
@@ -43,7 +47,7 @@ impl DynImage {
         }
     }
 
-    /// Returns an encoder for the inner image
+    /// Create an [encoder][crate::ImageEncoder] for the inner image
     #[inline]
     pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)

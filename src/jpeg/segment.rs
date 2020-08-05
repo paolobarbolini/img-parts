@@ -11,7 +11,7 @@ use crate::{Result, EXIF_DATA_PREFIX};
 
 const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 
-/// The representation of a single segment composing a Jpeg image.
+/// The representation of a segment making up a [`Jpeg`][super::Jpeg]
 #[derive(Clone, PartialEq)]
 pub struct JpegSegment {
     marker: u8,
@@ -21,7 +21,7 @@ pub struct JpegSegment {
 
 #[allow(clippy::len_without_is_empty)]
 impl JpegSegment {
-    /// Construct an empty `JpegSegment`.
+    /// Construct an empty `JpegSegment`
     #[inline]
     pub fn new(marker: u8) -> JpegSegment {
         JpegSegment {
@@ -31,7 +31,7 @@ impl JpegSegment {
         }
     }
 
-    /// Construct a `JpegSegment` with `contents`.
+    /// Construct a `JpegSegment` with `contents`
     #[inline]
     pub fn new_with_contents(marker: u8, contents: Bytes) -> JpegSegment {
         JpegSegment {
@@ -41,7 +41,7 @@ impl JpegSegment {
         }
     }
 
-    /// Construct a `JpegSegment` with `contents` and `Etropy`.
+    /// Construct a `JpegSegment` with `contents` and `entropy`
     #[inline]
     pub fn new_with_entropy(marker: u8, contents: Bytes, entropy: Bytes) -> JpegSegment {
         JpegSegment {
@@ -71,8 +71,7 @@ impl JpegSegment {
         JpegSegment::new_with_contents(markers::APP1, contents.freeze())
     }
 
-    /// Create a `JpegSegment` with a length from a Reader.
-    pub fn from_bytes(marker: u8, b: &mut Bytes) -> Result<JpegSegment> {
+    pub(crate) fn from_bytes(marker: u8, b: &mut Bytes) -> Result<JpegSegment> {
         let size = b.get_u16() - 2;
 
         let contents = b.split_to(size as usize);
@@ -84,8 +83,8 @@ impl JpegSegment {
         }
     }
 
-    /// Get the size of this `JpegSegment` once it is encoded excluding
-    /// the `Entropy`.
+    /// Get the size of this `JpegSegment` once it is encoded, entropy
+    /// excluded.
     ///
     /// The size is the sum of:
     ///
@@ -102,7 +101,7 @@ impl JpegSegment {
         }
     }
 
-    /// Get the size of this `JpegSegment` once it is encoded including
+    /// Get the size of this `JpegSegment` once it is encoded, including
     /// the `Entropy`.
     ///
     /// The size is the sum of:
@@ -115,19 +114,19 @@ impl JpegSegment {
         self.len() + self.entropy.len()
     }
 
-    /// Get the second byte of the marker of this `JpegSegment`.
+    /// Get the second byte of the marker of this `JpegSegment`
     #[inline]
     pub fn marker(&self) -> u8 {
         self.marker
     }
 
-    /// Get the content of this `JpegSegment`.
+    /// Get the content of this `JpegSegment`
     #[inline]
     pub fn contents(&self) -> &Bytes {
         &self.contents
     }
 
-    /// Check if this `JpegSegment` has entropy.
+    /// Check if this `JpegSegment` has entropy
     #[inline]
     pub fn has_entropy(&self) -> bool {
         !self.entropy.is_empty()
@@ -181,7 +180,7 @@ impl JpegSegment {
         Ok(())
     }
 
-    /// Returns an encoder for this `JpegSegment`
+    /// Create an [encoder][crate::ImageEncoder] for this `JpegSegment`
     #[inline]
     pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)

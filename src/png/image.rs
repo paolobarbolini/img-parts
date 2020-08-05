@@ -14,7 +14,7 @@ pub(crate) const SIGNATURE: &[u8] = &[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 
 pub const CHUNK_ICCP: [u8; 4] = [b'i', b'C', b'C', b'P'];
 pub const CHUNK_EXIF: [u8; 4] = [b'e', b'X', b'I', b'f'];
 
-/// The representation of a Png image.
+/// The representation of a Png image
 #[derive(Debug, Clone, PartialEq)]
 pub struct Png {
     chunks: Vec<PngChunk>,
@@ -22,11 +22,12 @@ pub struct Png {
 
 #[allow(clippy::len_without_is_empty)]
 impl Png {
-    /// Create a new `Png` image from a Reader.
+    /// Create a `Png` from `Bytes`
     ///
     /// # Errors
     ///
-    /// This method fails if reading fails or if the file signature is invalid.
+    /// This method fails if the file signature doesn't match or if
+    /// it is corrupted or truncated.
     pub fn from_bytes(mut b: Bytes) -> Result<Png> {
         let mut signature = [0; SIGNATURE.len()];
         b.copy_to_slice(&mut signature);
@@ -49,29 +50,29 @@ impl Png {
         Ok(Png { chunks })
     }
 
-    /// Get the chunks of this `Png`.
+    /// Get the chunks of this `Png`
     #[inline]
     pub fn chunks(&self) -> &Vec<PngChunk> {
         &self.chunks
     }
 
-    /// Get a mutable reference to the chunks of this `Png`.
+    /// Get a mutable reference to the chunks of this `Png`
     #[inline]
     pub fn chunks_mut(&mut self) -> &mut Vec<PngChunk> {
         &mut self.chunks
     }
 
-    /// Get the first chunk with a marker of `marker`
+    /// Get the first chunk with a type of `kind`
     pub fn chunk_by_type(&self, kind: [u8; 4]) -> Option<&PngChunk> {
         self.chunks.iter().find(|chunk| chunk.kind() == kind)
     }
 
-    /// Get every chunk with a marker of `marker`
+    /// Get every chunk with a type of `kind`
     pub fn chunks_by_type(&self, kind: [u8; 4]) -> impl Iterator<Item = &PngChunk> {
         self.chunks.iter().filter(move |chunk| chunk.kind() == kind)
     }
 
-    /// Remove every chunk with an id of `id`
+    /// Remove every chunk with a type of `kind`
     pub fn remove_chunks_by_type(&mut self, kind: [u8; 4]) {
         self.chunks_mut().retain(|chunk| chunk.kind() != kind);
     }
@@ -87,7 +88,7 @@ impl Png {
         8 + self.chunks.iter().map(|chunk| chunk.len()).sum::<usize>()
     }
 
-    /// Returns an encoder for this `Png`
+    /// Create an [encoder][crate::ImageEncoder] for this `Png`
     #[inline]
     pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)

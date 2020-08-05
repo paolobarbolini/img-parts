@@ -8,7 +8,7 @@ use crc32fast::Hasher;
 use crate::encoder::{EncodeAt, ImageEncoder};
 use crate::Result;
 
-/// The representation of a single chunk composing a Png image.
+/// The representation of a chunk making up a [`Png`][super::Png]
 #[derive(Clone, PartialEq)]
 pub struct PngChunk {
     kind: [u8; 4],
@@ -18,13 +18,13 @@ pub struct PngChunk {
 
 #[allow(clippy::len_without_is_empty)]
 impl PngChunk {
-    /// Construct an new `PngChunk`.
+    /// Construct an new `PngChunk`
     pub fn new(kind: [u8; 4], contents: Bytes) -> PngChunk {
         let crc = crc(kind, &contents);
         Self::new_with_crc(kind, contents, crc)
     }
 
-    /// Construct an new `PngChunk` with a known `crc`.
+    /// Construct an new `PngChunk` with a known `crc`
     #[inline]
     fn new_with_crc(kind: [u8; 4], contents: Bytes, crc: [u8; 4]) -> PngChunk {
         PngChunk {
@@ -34,7 +34,11 @@ impl PngChunk {
         }
     }
 
-    /// Create a `PngChunk` from a Reader.
+    /// Create a `PngChunk` from `Bytes`
+    ///
+    /// # Errors
+    ///
+    /// This method fails if the chunk is corrupted or truncated.
     pub fn from_bytes(b: &mut Bytes) -> Result<PngChunk> {
         if b.len() < 8 {
             return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "end of png").into());
@@ -51,8 +55,7 @@ impl PngChunk {
         Ok(PngChunk::new_with_crc(kind, contents, crc))
     }
 
-    /// Get the size of this `PngChunk` once it is encoded excluding
-    /// the `Entropy`.
+    /// Get the size of this `PngChunk` once it is encoded
     ///
     /// The size is the sum of:
     ///
@@ -65,19 +68,19 @@ impl PngChunk {
         4 + 4 + self.contents.len() + 4
     }
 
-    /// Get the type of this `PngChunk`.
+    /// Get the type of this `PngChunk`
     #[inline]
     pub fn kind(&self) -> [u8; 4] {
         self.kind
     }
 
-    /// Get the content of this `PngChunk`.
+    /// Get the content of this `PngChunk`
     #[inline]
     pub fn contents(&self) -> &Bytes {
         &self.contents
     }
 
-    /// Returns an encoder for this `PngChunk`
+    /// Create an [encoder][crate::ImageEncoder] for this `PngChunk`
     #[inline]
     pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)
@@ -111,6 +114,7 @@ impl fmt::Debug for PngChunk {
     }
 }
 
+/// Compute the `crc` for a `PngChunk`
 fn crc(kind: [u8; 4], contents: &[u8]) -> [u8; 4] {
     let mut hasher = Hasher::new();
     hasher.update(&kind);

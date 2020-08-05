@@ -27,7 +27,7 @@ pub(crate) fn is_webp(buf: &[u8]) -> bool {
     buf.len() > 12 && &buf[..4] == b"RIFF" && &buf[8..12] == b"WEBP"
 }
 
-/// The representation of a WebP image.
+/// The representation of a WebP image
 #[derive(Debug, Clone, PartialEq)]
 pub struct WebP {
     riff: RiffChunk,
@@ -39,8 +39,8 @@ impl WebP {
     ///
     /// # Errors
     ///
-    /// This method returns a [`Error::NoWebpCC`][crate::Error::NoWebpCC] if the
-    /// content of the [`RiffChunk`][crate::riff::RiffChunk] isn't a `List` or
+    /// This method returns a [`Error::WrongSignature`][crate::Error::WrongSignature]
+    /// if the content of the [`RiffChunk`][crate::riff::RiffChunk] isn't a `List` or
     /// if the list's kind isn't "WEBP".
     pub fn new(riff: RiffChunk) -> Result<WebP> {
         match riff.content().list() {
@@ -59,8 +59,8 @@ impl WebP {
     ///
     /// # Errors
     ///
-    /// This method fails if reading fails, if the first chunk doesn't have
-    /// an id of "RIFF" or if the content kind of the first chunk isn't "WEBP".
+    /// This method fails if the file signature doesn't match or if
+    /// it is corrupted or truncated.
     #[inline]
     pub fn from_bytes(b: Bytes) -> Result<WebP> {
         let riff = RiffChunk::from_bytes(b)?;
@@ -204,7 +204,7 @@ impl WebP {
         Ok(())
     }
 
-    /// Returns an `Iterator` over the `Bytes` composing this `RiffChunk`
+    /// Create an [encoder][crate::ImageEncoder] for this `WebP`
     ///
     /// Internally calls [`RiffChunk::encoder`][crate::riff::RiffChunk::encoder] on the
     /// inner `RiffChunk`
