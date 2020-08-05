@@ -46,12 +46,11 @@ impl PngChunk {
 
         let size = b.get_u32();
 
-        let kind = b.split_to(4);
+        let mut kind = [0; 4];
+        b.copy_to_slice(&mut kind);
         let contents = b.split_to(size as usize);
-        let crc = b.split_to(4);
-
-        let kind = kind.as_ref().try_into().unwrap();
-        let crc = crc.as_ref().try_into().unwrap();
+        let mut crc = [0; 4];
+        b.copy_to_slice(&mut crc);
 
         if crc != compute_crc(kind, &contents) {
             return Err(Error::BadCRC);
