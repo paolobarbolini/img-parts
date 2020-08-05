@@ -5,6 +5,10 @@
 [![Rustc Version 1.39.0+](https://img.shields.io/badge/rustc-1.39.0+-lightgray.svg)](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html)
 [![CI](https://github.com/paolobarbolini/img-parts/workflows/CI/badge.svg)](https://github.com/paolobarbolini/img-parts/actions?query=workflow%3ACI)
 
+**NOTE:** this README refers to the upcoming 0.2.0 version, which hasn't been released yet.
+If you are looking for examples for the 0.1.1 version take a look at the
+[`0.1.x branch`](https://github.com/paolobarbolini/img-parts/tree/v0.1.x).
+
 The `img-parts` crate provides a low level api for reading and
 writing containers from various image formats.
 
