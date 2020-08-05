@@ -57,13 +57,18 @@ impl Png {
     }
 
     /// Get the first chunk with a marker of `marker`
-    pub fn chunk_by_kind(&self, kind: [u8; 4]) -> Option<&PngChunk> {
+    pub fn chunk_by_type(&self, kind: [u8; 4]) -> Option<&PngChunk> {
         self.chunks.iter().find(|chunk| chunk.kind() == kind)
     }
 
     /// Get every chunk with a marker of `marker`
-    pub fn chunks_by_kind(&self, kind: [u8; 4]) -> impl Iterator<Item = &PngChunk> {
+    pub fn chunks_by_type(&self, kind: [u8; 4]) -> impl Iterator<Item = &PngChunk> {
         self.chunks.iter().filter(move |chunk| chunk.kind() == kind)
+    }
+
+    /// Remove every chunk with an id of `id`
+    pub fn remove_chunks_by_type(&mut self, kind: [u8; 4]) {
+        self.chunks_mut().retain(|chunk| chunk.kind() != kind);
     }
 
     /// Get the total size of the `Png` once it is encoded.
