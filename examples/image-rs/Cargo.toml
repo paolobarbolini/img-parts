@@ -11,7 +11,7 @@ publish = false
 [dependencies]
 # importing the image crate with only jpeg and webp suuport, since this example
 # focuses on formats supported by img-parts. This also makes the builds faster.
-image = { version = "0.23", default-features = false, features = ["jpeg", "webp"] }
+image = { version = "0.23", default-features = false, features = ["jpeg", "png", "webp"] }
 img-parts = { path = "../../" }
 bytes = "0.5.3"
 
