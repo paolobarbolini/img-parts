@@ -9,8 +9,11 @@
 If you are looking for examples for the 0.1.1 version take a look at the
 [`0.1.x branch`](https://github.com/paolobarbolini/img-parts/tree/v0.1.x).
 
-The `img-parts` crate provides a low level api for reading and
-writing containers from various image formats.
+The `img-parts` crate provides a low level API for reading and
+writing containers from various image formats, and a high level
+API for reading and writing raw ICC profiles and EXIF metadata.
+
+Examples can be found in the `examples` directory on GitHub.
 
 It currently supports `Jpeg`, `Png` and `RIFF` (with some helper
 functions for `WebP`).

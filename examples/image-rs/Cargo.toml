@@ -1,0 +1,20 @@
+[package]
+name = "img-parts-image-rs-example"
+version = "0.0.0"
+authors = ["Paolo Barbolini <paolo@paolo565.org>"]
+description = "Example that converts images using the image crate while keeping the original ICCP and EXIF metadata"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/paolobarbolini/img-parts"
+edition = "2018"
+publish = false
+
+[dependencies]
+# importing the image crate with only jpeg and webp suuport, since this example
+# focuses on formats supported by img-parts. This also makes the builds faster.
+image = { version = "0.23", default-features = false, features = ["jpeg", "webp"] }
+img-parts = { path = "../../" }
+bytes = "0.5.3"
+
+[profile.dev]
+# just making the example run a bit faster
+opt-level = 2
