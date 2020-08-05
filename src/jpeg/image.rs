@@ -5,6 +5,7 @@ use bytes::{Buf, Bytes, BytesMut};
 use super::markers;
 use super::JpegSegment;
 use crate::encoder::{EncodeAt, ImageEncoder};
+use crate::util::read_checked;
 use crate::{Error, ImageEXIF, ImageICC, Result};
 
 // segment size (2 byte) - segment meta (14 byte)
@@ -28,8 +29,8 @@ impl Jpeg {
     /// This method fails if the file signature doesn't match or if
     /// it is corrupted or truncated.
     pub fn from_bytes(mut b: Bytes) -> Result<Jpeg> {
-        let b0 = b.get_u8();
-        let b1 = b.get_u8();
+        let b0 = read_checked(&mut b, |b| b.get_u8())?;
+        let b1 = read_checked(&mut b, |b| b.get_u8())?;
 
         if b0 != markers::P || b1 != markers::SOI {
             return Err(Error::WrongSignature);
@@ -37,14 +38,14 @@ impl Jpeg {
 
         let mut segments = Vec::new();
         loop {
-            let fmb = b.get_u8();
+            let fmb = read_checked(&mut b, |b| b.get_u8())?;
             if fmb != markers::P {
                 continue;
             }
 
             let mut marker;
             loop {
-                marker = b.get_u8();
+                marker = read_checked(&mut b, |b| b.get_u8())?;
                 if marker != markers::P {
                     break;
                 }

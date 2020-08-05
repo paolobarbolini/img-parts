@@ -5,6 +5,7 @@ use std::io::Write;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use crate::encoder::{EncodeAt, ImageEncoder};
+use crate::util::{read_checked, read_u8_len4_array, split_to_checked};
 use crate::{Error, Result};
 
 // the 4 bytes signature
@@ -47,8 +48,7 @@ impl RiffChunk {
     }
 
     pub(crate) fn from_bytes_impl(b: &mut Bytes, check_riff_id: bool) -> Result<RiffChunk> {
-        let mut id = [0; SIGNATURE.len()];
-        b.copy_to_slice(&mut id);
+        let id: [u8; SIGNATURE.len()] = read_u8_len4_array(b)?;
         if check_riff_id && id != SIGNATURE {
             return Err(Error::WrongSignature);
         }
@@ -130,15 +130,12 @@ impl EncodeAt for RiffChunk {
 #[allow(clippy::len_without_is_empty)]
 impl RiffContent {
     fn from_bytes(b: &mut Bytes, id: [u8; 4]) -> Result<RiffContent> {
-        let len = b.get_u32_le();
-        let mut content = b.split_to(len as usize);
+        let len = read_checked(b, |b| b.get_u32_le())?;
+        let mut content = split_to_checked(b, len as usize)?;
 
         if has_subchunks(id) {
             let kind = if has_kind(id) {
-                let mut buf = [0u8; 4];
-                content.copy_to_slice(&mut buf);
-
-                Some(buf)
+                Some(read_u8_len4_array(&mut content)?)
             } else {
                 None
             };
@@ -152,7 +149,9 @@ impl RiffContent {
             Ok(RiffContent::List { kind, subchunks })
         } else {
             // RIFF chunks with an uneven number of bytes have an extra 0x00 padding byte
-            b.advance((len % 2) as usize);
+            if len % 2 != 0 {
+                read_checked(b, |b| b.get_u8())?;
+            }
 
             Ok(RiffContent::Data(content))
         }

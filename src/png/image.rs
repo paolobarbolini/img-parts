@@ -4,6 +4,7 @@ use miniz_oxide::inflate::decompress_to_vec_zlib;
 
 use super::PngChunk;
 use crate::encoder::{EncodeAt, ImageEncoder};
+use crate::util::read_u8_len8_array;
 use crate::{Error, ImageEXIF, ImageICC, Result};
 
 // the 8 byte signature
@@ -27,8 +28,7 @@ impl Png {
     /// This method fails if the file signature doesn't match or if
     /// it is corrupted or truncated.
     pub fn from_bytes(mut b: Bytes) -> Result<Png> {
-        let mut signature = [0; SIGNATURE.len()];
-        b.copy_to_slice(&mut signature);
+        let signature: [u8; SIGNATURE.len()] = read_u8_len8_array(&mut b)?;
         if signature != SIGNATURE {
             return Err(Error::WrongSignature);
         }

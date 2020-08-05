@@ -5,6 +5,7 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crc32fast::Hasher;
 
 use crate::encoder::{EncodeAt, ImageEncoder};
+use crate::util::{read_checked, read_u8_len4_array, split_to_checked};
 use crate::{Error, Result};
 
 /// The representation of a chunk making up a [`Png`][super::Png]
@@ -39,13 +40,11 @@ impl PngChunk {
     ///
     /// This method fails if the chunk is corrupted or truncated.
     pub fn from_bytes(b: &mut Bytes) -> Result<PngChunk> {
-        let size = b.get_u32();
+        let size = read_checked(b, |b| b.get_u32())?;
 
-        let mut kind = [0; 4];
-        b.copy_to_slice(&mut kind);
-        let contents = b.split_to(size as usize);
-        let mut crc = [0; 4];
-        b.copy_to_slice(&mut crc);
+        let kind = read_u8_len4_array(b)?;
+        let contents = split_to_checked(b, size as usize)?;
+        let crc = read_u8_len4_array(b)?;
 
         if crc != compute_crc(kind, &contents) {
             return Err(Error::BadCRC);

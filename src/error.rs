@@ -13,6 +13,9 @@ pub enum Error {
 
     /// The chunk CRC didn't match the expected calculated CRC
     BadCRC,
+
+    /// A truncated chunk was read
+    Truncated,
 }
 
 impl fmt::Display for Error {
@@ -24,6 +27,7 @@ impl fmt::Display for Error {
                 f.write_str("the file signature didn't match the expected signature")
             }
             Self::BadCRC => f.write_str("the chunk CRC didn't match the expected calculated CRC"),
+            Self::Truncated => f.write_str("a truncated chunk was read"),
         }
     }
 }
