@@ -37,18 +37,18 @@
 //! # }
 //! ```
 
-pub use common::{ImageEXIF, ImageICC};
 pub use encoder::{ImageEncoder, ImageEncoderReader};
 pub use error::{Error, Result};
+pub use traits::{ImageEXIF, ImageICC};
 
 pub(crate) const EXIF_DATA_PREFIX: &[u8] = b"Exif\0\0";
 
-mod common;
 mod encoder;
 mod error;
 pub mod jpeg;
 pub mod png;
 pub mod riff;
+mod traits;
 pub(crate) mod util;
 pub mod vp8;
 pub mod webp;
