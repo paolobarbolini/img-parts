@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 use std::fmt;
-use std::io::Write;
+use std::io::{self, Write};
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
@@ -175,7 +175,7 @@ impl JpegSegment {
         since = "0.2.0",
         note = "Please use JpegSegment::encoder().write_to(writer)"
     )]
-    pub fn write_to(self, w: &mut dyn Write) -> Result<()> {
+    pub fn write_to(self, w: &mut dyn Write) -> io::Result<()> {
         self.encoder().write_to(w)?;
         Ok(())
     }

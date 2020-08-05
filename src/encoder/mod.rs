@@ -1,4 +1,4 @@
-use std::io::{Result, Write};
+use std::io::{self, Write};
 
 use bytes::{Bytes, BytesMut};
 
@@ -74,7 +74,7 @@ impl<I: EncodeAt> ImageEncoder<I> {
     /// # Errors
     ///
     /// This methods fails if writing fails.
-    pub fn write_to<W: Write>(self, mut writer: W) -> Result<u64> {
+    pub fn write_to<W: Write>(self, mut writer: W) -> io::Result<u64> {
         let mut len = 0;
 
         for chunk in self {
