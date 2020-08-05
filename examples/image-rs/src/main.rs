@@ -1,14 +1,12 @@
 use std::env::args;
 use std::fs::{self, File};
+use std::io::Write;
 use std::path::Path;
 use std::process::exit;
 
 use bytes::buf::BufMutExt;
 use bytes::{Bytes, BytesMut};
-use img_parts::jpeg::Jpeg;
-use img_parts::png::Png;
-use img_parts::webp::WebP;
-use img_parts::{ImageEXIF, ImageICC};
+use img_parts::{DynImage, ImageEXIF, ImageICC};
 
 fn main() {
     let mut args = args();
@@ -49,30 +47,12 @@ fn load(path: &Path) -> (image::DynamicImage, Option<Bytes>, Option<Bytes>) {
     let buf = fs::read(path).expect("read input file");
 
     // load the image
-    let format = image::guess_format(&buf).expect("format is supported");
-    let img = image::load_from_memory_with_format(&buf, format).expect("image loaded");
+    let img = image::load_from_memory(&buf).expect("image decoded");
 
     // extract ICC and EXIF metadata
-    let (iccp, exif) = match format {
-        image::ImageFormat::Jpeg => {
-            let jpeg =
-                Jpeg::from_bytes(buf.into()).expect("img-parts successfully loaded the jpeg");
-            (jpeg.icc_profile(), jpeg.exif())
-        }
-        image::ImageFormat::Png => {
-            let png = Png::from_bytes(buf.into()).expect("img-parts successfully loaded the png");
-            (png.icc_profile(), png.exif())
-        }
-        image::ImageFormat::WebP => {
-            let webp =
-                WebP::from_bytes(buf.into()).expect("img-parts successfully loaded the webp");
-            (webp.icc_profile(), webp.exif())
-        }
-        _ => {
-            // unsupported img-parts format
-            (None, None)
-        }
-    };
+    let (iccp, exif) = DynImage::from_bytes(buf.into())
+        .expect("image loaded")
+        .map_or((None, None), |dimg| (dimg.icc_profile(), dimg.exif()));
 
     (img, iccp, exif)
 }
@@ -86,37 +66,22 @@ fn save(img: image::DynamicImage, path: &Path, iccp: Option<Bytes>, exif: Option
     let mut out_file = File::create(path).expect("create output file");
 
     if iccp.is_some() || exif.is_some() {
-        match out_format {
-            image::ImageFormat::Jpeg => {
-                let mut out = BytesMut::new().writer();
-                img.write_to(&mut out, out_format).expect("image encoded");
-                let out = out.into_inner().freeze();
+        let mut out = BytesMut::new().writer();
+        img.write_to(&mut out, out_format).expect("image encoded");
+        let out = out.into_inner().freeze();
 
-                let mut jpeg = Jpeg::from_bytes(out).expect("img-parts loaded the jpg");
-                jpeg.set_icc_profile(iccp);
-                jpeg.set_exif(exif);
-                jpeg.encoder()
+        match DynImage::from_bytes(out.clone()).expect("image loaded") {
+            Some(mut dimg) => {
+                dimg.set_icc_profile(iccp);
+                dimg.set_exif(exif);
+                dimg.encoder()
                     .write_to(out_file)
                     .expect("output file written");
-                return;
             }
-            image::ImageFormat::Png => {
-                let mut out = BytesMut::new().writer();
-                img.write_to(&mut out, out_format).expect("image encoded");
-                let out = out.into_inner().freeze();
-
-                let mut png = Png::from_bytes(out).expect("img-parts loaded the png");
-                png.set_icc_profile(iccp);
-                png.set_exif(exif);
-                png.encoder()
-                    .write_to(out_file)
-                    .expect("output file written");
-                return;
-            }
-            _ => {}
+            None => out_file.write_all(&out).expect("output file written"),
         };
+    } else {
+        img.write_to(&mut out_file, out_format)
+            .expect("image encoded without ICCP or EXIF");
     }
-
-    img.write_to(&mut out_file, out_format)
-        .expect("image encoded without ICCP or EXIF");
 }
