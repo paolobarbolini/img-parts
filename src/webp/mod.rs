@@ -44,10 +44,10 @@ impl WebP {
                 if kind == &Some(*b"WEBP") {
                     Ok(WebP { riff })
                 } else {
-                    Err(Error::NoWebpCC)
+                    Err(Error::WrongSignature)
                 }
             }
-            None => Err(Error::NoWebpCC),
+            None => Err(Error::WrongSignature),
         }
     }
 

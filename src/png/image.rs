@@ -1,6 +1,6 @@
 use std::io;
 
-use bytes::Bytes;
+use bytes::{Buf, Bytes};
 
 use super::PngChunk;
 use crate::encoder::{EncodeAt, ImageEncoder};
@@ -23,10 +23,10 @@ impl Png {
     ///
     /// This method fails if reading fails or if the file signature is invalid.
     pub fn from_bytes(mut b: Bytes) -> Result<Png> {
-        let signature = b.split_to(8);
-        if !signature.as_ref().starts_with(SIGNATURE) {
-            // TODO: use ERROR
-            panic!("invalid signature {:?}", signature.as_ref());
+        let mut signature = [0; SIGNATURE.len()];
+        b.copy_to_slice(&mut signature);
+        if signature != SIGNATURE {
+            return Err(Error::WrongSignature);
         }
 
         let mut chunks = Vec::new();

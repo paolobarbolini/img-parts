@@ -32,7 +32,7 @@ impl Jpeg {
         let b1 = b.get_u8();
 
         if b0 != markers::P || b1 != markers::SOI {
-            return Err(Error::FirstTwoBytesNotSOI);
+            return Err(Error::WrongSignature);
         }
 
         let mut segments = Vec::new();

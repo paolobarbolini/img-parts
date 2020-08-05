@@ -7,6 +7,9 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crate::encoder::{EncodeAt, ImageEncoder};
 use crate::{Error, Result};
 
+// the 4 bytes signature
+const SIGNATURE: &[u8] = &[b'R', b'I', b'F', b'F'];
+
 /// The representation of a RIFF chunk
 #[derive(Clone, PartialEq)]
 pub struct RiffChunk {
@@ -36,19 +39,17 @@ impl RiffChunk {
     ///
     /// # Errors
     ///
-    /// This method fails if reading fails or if the first chunk doesn't have
-    /// an id of "RIFF"
+    /// This method fails if reading fails or if the file signature is invalid.
     #[inline]
     pub fn from_bytes(mut b: Bytes) -> Result<RiffChunk> {
         RiffChunk::from_bytes_impl(&mut b, true)
     }
 
     pub(crate) fn from_bytes_impl(b: &mut Bytes, check_riff_id: bool) -> Result<RiffChunk> {
-        let mut id = [0u8; 4];
+        let mut id = [0; SIGNATURE.len()];
         b.copy_to_slice(&mut id);
-
-        if check_riff_id && id != *b"RIFF" {
-            return Err(Error::NoRiffHeader);
+        if check_riff_id && id != SIGNATURE {
+            return Err(Error::WrongSignature);
         }
 
         let content = RiffContent::from_bytes(b, id)?;
