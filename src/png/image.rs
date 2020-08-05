@@ -1,5 +1,3 @@
-use std::io;
-
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use miniz_oxide::deflate::compress_to_vec_zlib;
 use miniz_oxide::inflate::decompress_to_vec_zlib;
@@ -36,14 +34,8 @@ impl Png {
         }
 
         let mut chunks = Vec::new();
-        loop {
-            let chunk = match PngChunk::from_bytes(&mut b) {
-                Ok(chunk) => chunk,
-                Err(Error::Io(e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
-                    break;
-                }
-                Err(e) => return Err(e),
-            };
+        while !b.is_empty() {
+            let chunk = PngChunk::from_bytes(&mut b)?;
             chunks.push(chunk);
         }
 

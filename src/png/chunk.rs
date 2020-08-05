@@ -1,6 +1,5 @@
 use std::convert::TryInto;
 use std::fmt;
-use std::io;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crc32fast::Hasher;
@@ -40,10 +39,6 @@ impl PngChunk {
     ///
     /// This method fails if the chunk is corrupted or truncated.
     pub fn from_bytes(b: &mut Bytes) -> Result<PngChunk> {
-        if b.len() < 8 {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "end of png").into());
-        }
-
         let size = b.get_u32();
 
         let mut kind = [0; 4];
