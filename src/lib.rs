@@ -16,8 +16,9 @@
 //!
 //! ```rust,no_run
 //! # use std::fs::{self, File};
-//! # use img_parts::Result;
-//! # fn run() -> Result<()> {
+//! # use std::result::Result;
+//! # use std::error::Error;
+//! # fn run() -> Result<(), Box<dyn Error + 'static>> {
 //! use img_parts::jpeg::Jpeg;
 //! use img_parts::{ImageEXIF, ImageICC};
 //!
