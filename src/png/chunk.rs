@@ -3,6 +3,7 @@ use std::fmt;
 use std::io;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
+use crc32fast::Hasher;
 
 use crate::encoder::{EncodeAt, ImageEncoder};
 use crate::Result;
@@ -18,8 +19,14 @@ pub struct PngChunk {
 #[allow(clippy::len_without_is_empty)]
 impl PngChunk {
     /// Construct an new `PngChunk`.
+    pub fn new(kind: [u8; 4], contents: Bytes) -> PngChunk {
+        let crc = crc(kind, &contents);
+        Self::new_with_crc(kind, contents, crc)
+    }
+
+    /// Construct an new `PngChunk` with a known `crc`.
     #[inline]
-    pub fn new(kind: [u8; 4], contents: Bytes, crc: [u8; 4]) -> PngChunk {
+    fn new_with_crc(kind: [u8; 4], contents: Bytes, crc: [u8; 4]) -> PngChunk {
         PngChunk {
             kind,
             contents,
@@ -41,7 +48,7 @@ impl PngChunk {
 
         let kind = kind.as_ref().try_into().unwrap();
         let crc = crc.as_ref().try_into().unwrap();
-        Ok(PngChunk::new(kind, contents, crc))
+        Ok(PngChunk::new_with_crc(kind, contents, crc))
     }
 
     /// Get the size of this `PngChunk` once it is encoded excluding
@@ -102,4 +109,13 @@ impl fmt::Debug for PngChunk {
             .field("kind", &self.kind)
             .finish()
     }
+}
+
+fn crc(kind: [u8; 4], contents: &[u8]) -> [u8; 4] {
+    let mut hasher = Hasher::new();
+    hasher.update(&kind);
+    hasher.update(contents);
+    let crc = hasher.finalize();
+
+    crc.to_be_bytes()
 }
