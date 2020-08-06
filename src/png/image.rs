@@ -157,7 +157,7 @@ impl ImageEXIF for Png {
 
         if let Some(exif) = exif {
             let chunk = PngChunk::new(CHUNK_EXIF, exif);
-            self.chunks.insert(1, chunk);
+            self.chunks.insert(self.chunks.len() - 1, chunk);
         }
     }
 }
