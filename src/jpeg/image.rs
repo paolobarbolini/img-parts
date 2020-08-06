@@ -36,7 +36,7 @@ impl Jpeg {
             return Err(Error::WrongSignature);
         }
 
-        let mut segments = Vec::new();
+        let mut segments = Vec::with_capacity(8);
         loop {
             let fmb = read_checked(&mut b, |b| b.get_u8())?;
             if fmb != markers::P {

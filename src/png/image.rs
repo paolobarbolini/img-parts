@@ -33,7 +33,7 @@ impl Png {
             return Err(Error::WrongSignature);
         }
 
-        let mut chunks = Vec::new();
+        let mut chunks = Vec::with_capacity(8);
         while !b.is_empty() {
             let chunk = PngChunk::from_bytes(&mut b)?;
             chunks.push(chunk);
