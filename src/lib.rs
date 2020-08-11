@@ -11,14 +11,14 @@
 //! [`Png`][crate::png::Png] and [`RIFF`][crate::riff::RiffChunk]
 //! (with some helper functions for [`WebP`][crate::webp::WebP]).
 //!
-//! With it you can read an image, modify its sections and save it
-//! back.
+//! ## Reading and writing raw ICCP and EXIF metadata
 //!
 //! ```rust,no_run
-//! # use std::fs::{self, File};
 //! # use std::result::Result;
 //! # use std::error::Error;
 //! # fn run() -> Result<(), Box<dyn Error + 'static>> {
+//! use std::fs::{self, File};
+//!
 //! use img_parts::jpeg::Jpeg;
 //! use img_parts::{ImageEXIF, ImageICC};
 //!
@@ -33,6 +33,31 @@
 //!
 //! jpeg.set_icc_profile(Some(another_icc_profile.into()));
 //! jpeg.set_exif(Some(new_exif_metadata.into()));
+//! jpeg.encoder().write_to(output)?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Modifying chunks
+//!
+//! ```rust,no_run
+//! # use std::result::Result;
+//! # use std::error::Error;
+//! # fn run() -> Result<(), Box<dyn Error + 'static>> {
+//! use std::fs::{self, File};
+//!
+//! use img_parts::jpeg::{markers, Jpeg, JpegSegment};
+//! use img_parts::Bytes;
+//!
+//! let input = fs::read("img.jpg")?;
+//! let output = File::create("out.jpg")?;
+//!
+//! let mut jpeg = Jpeg::from_bytes(input.into())?;
+//!
+//! let comment = Bytes::from("Hello, I'm writing a comment!");
+//! let comment_segment = JpegSegment::new_with_contents(markers::COM, comment);
+//! jpeg.segments_mut().insert(1, comment_segment);
+//!
 //! jpeg.encoder().write_to(output)?;
 //! # Ok(())
 //! # }

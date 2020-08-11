@@ -18,10 +18,11 @@ Examples can be found in the `examples` directory on GitHub.
 It currently supports `Jpeg`, `Png` and `RIFF` (with some helper
 functions for `WebP`).
 
-With it you can read an image, modify its sections and save it
-back.
+## Reading and writing raw ICCP and EXIF metadata
 
 ```rust,ignore
+use std::fs::{self, File};
+
 use img_parts::jpeg::Jpeg;
 use img_parts::{ImageEXIF, ImageICC};
 
@@ -34,6 +35,26 @@ let exif_metadata = jpeg.exif();
 
 jpeg.set_icc_profile(Some(another_icc_profile.into()));
 jpeg.set_exif(Some(new_exif_metadata.into()));
+jpeg.encoder().write_to(output)?;
+```
+
+## Modifying chunks
+
+```rust,no_run
+use std::fs::{self, File};
+
+use img_parts::jpeg::{markers, Jpeg, JpegSegment};
+use img_parts::Bytes;
+
+let input = fs::read("img.jpg")?;
+let output = File::create("out.jpg")?;
+
+let mut jpeg = Jpeg::from_bytes(input.into())?;
+
+let comment = Bytes::from("Hello, I'm writing a comment!");
+let comment_segment = JpegSegment::new_with_contents(markers::COM, comment);
+jpeg.segments_mut().insert(1, comment_segment);
+
 jpeg.encoder().write_to(output)?;
 ```
 
