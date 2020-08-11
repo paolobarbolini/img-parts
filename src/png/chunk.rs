@@ -89,15 +89,15 @@ impl EncodeAt for PngChunk {
     fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
         match pos {
             0 => {
-                let mut bytes = BytesMut::new();
+                let mut bytes = BytesMut::with_capacity(8);
                 bytes.put_u32(self.contents.len().try_into().unwrap());
+                bytes.extend_from_slice(&self.kind);
                 Some(bytes.freeze())
             }
-            1 => Some(Bytes::copy_from_slice(&self.kind)),
-            2 => Some(self.contents.clone()),
-            3 => Some(Bytes::copy_from_slice(&self.crc)),
+            1 => Some(self.contents.clone()),
+            2 => Some(Bytes::copy_from_slice(&self.crc)),
             _ => {
-                *pos -= 4;
+                *pos -= 3;
                 None
             }
         }
