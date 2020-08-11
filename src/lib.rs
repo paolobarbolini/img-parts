@@ -38,6 +38,8 @@
 //! # }
 //! ```
 
+pub use bytes::Bytes;
+
 pub use common::DynImage;
 pub use encoder::{ImageEncoder, ImageEncoderReader};
 pub use error::{Error, Result};
