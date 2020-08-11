@@ -99,6 +99,11 @@ impl Jpeg {
             .filter(move |segment| segment.marker() == marker)
     }
 
+    /// Remove every segment with a marker of `marker`
+    pub fn remove_segments_by_marker(&mut self, marker: u8) {
+        self.segments.retain(|segment| segment.marker() != marker);
+    }
+
     /// Get the total size of the `Jpeg` once it is encoded
     ///
     /// The size is the sum of:
