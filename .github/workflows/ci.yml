@@ -53,6 +53,9 @@ jobs:
         include:
           - name: linux / stable
             rust: stable
+          - name: linux / stable --no-default-features
+            rust: stable
+            args: --no-default-features
           - name: linux / beta
             rust: beta
           - name: linux / nightly
