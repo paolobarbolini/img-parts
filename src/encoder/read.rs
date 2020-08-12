@@ -48,3 +48,67 @@ impl<I> From<ImageEncoder<I>> for ImageEncoderReader<I> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{EncodeAt, ImageEncoder};
+    use bytes::Bytes;
+    use std::io::Read;
+
+    struct FakeEncodeAt {
+        vec: Vec<Bytes>,
+    }
+
+    impl EncodeAt for FakeEncodeAt {
+        fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
+            self.vec.get(*pos).cloned()
+        }
+
+        fn len(&self) -> usize {
+            self.vec.iter().map(|buf| buf.len()).sum()
+        }
+    }
+
+    #[test]
+    fn image_encoder_iter() {
+        let encoder_at = FakeEncodeAt {
+            vec: vec![
+                Bytes::from_static(b"abcd"),
+                Bytes::from_static(b"9876"),
+                Bytes::from_static(b"ducks!"),
+            ],
+        };
+        let encoder = ImageEncoder::from(encoder_at);
+        let mut reader = encoder.read();
+
+        let mut r = [0u8; 2];
+        assert_eq!(reader.read(&mut r).unwrap(), 2);
+        assert_eq!(&r, b"ab");
+
+        let mut r = [0u8; 1];
+        assert_eq!(reader.read(&mut r).unwrap(), 1);
+        assert_eq!(&r, b"c");
+
+        let mut r = [0u8; 8];
+        assert_eq!(reader.read(&mut r).unwrap(), 1);
+        assert_eq!(&r[..1], b"d");
+
+        let mut r = [0u8; 8];
+        assert_eq!(reader.read(&mut r).unwrap(), 4);
+        assert_eq!(&r[..4], b"9876");
+
+        let mut r = [0u8; 4];
+        assert_eq!(reader.read(&mut r).unwrap(), 4);
+        assert_eq!(&r[..4], b"duck");
+
+        let mut r = [0u8; 4];
+        assert_eq!(reader.read(&mut r).unwrap(), 2);
+        assert_eq!(&r[..2], b"s!");
+
+        for _ in 0..3 {
+            let mut r = [0u8; 4];
+            assert_eq!(reader.read(&mut r).unwrap(), 0);
+            assert_eq!(&r[..], &[0, 0, 0, 0]);
+        }
+    }
+}
