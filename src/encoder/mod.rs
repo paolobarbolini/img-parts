@@ -140,10 +140,10 @@ pub trait EncodeAt {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+    use alloc::vec::Vec;
     #[cfg(feature = "std")]
     use std::io::Read;
-    use alloc::vec::Vec;
-    use alloc::vec;
 
     use super::{EncodeAt, ImageEncoder};
     use bytes::Bytes;
