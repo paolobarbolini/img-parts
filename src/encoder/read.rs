@@ -5,7 +5,7 @@ use bytes::Bytes;
 
 use super::{EncodeAt, ImageEncoder};
 
-/// A reader for `ImageEncoder`
+/// A reader for `ImageEncoder` that will never fail
 ///
 /// This struct is created by the [`read`][ImageEncoder::read] method on [`ImageEncoder`][ImageEncoder]
 #[derive(Debug)]

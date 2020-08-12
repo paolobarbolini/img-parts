@@ -5,25 +5,26 @@ use bytes::{Bytes, BytesMut};
 mod read;
 pub use read::ImageEncoderReader;
 
-/// An iterator that returns the [`Bytes`][bytes::Bytes] making up the inner image.
+/// An encoder for and image container or for an image chunk
 ///
-/// As image containers contain multiple _chunks_, each one with a piece of memory representing
-/// the chunk itself, the representation of the entire file is fragmented in memory.
+/// As image containers contain multiple _chunks_, each one stored as a separate piece of memory,
+/// the representation of the entire file is fragmented in memory.
 /// This crate tries to be as efficient as possible with memory, by giving access to
 /// the underlying fragmented chunks representing the full file, which can then be written or
-/// streamed piece by piece.
+/// streamed one at at time.
 ///
 /// Those chunks can be accessed through an `Iterator`, similar to how
-/// [futures::stream::Stream of Bytes][stream] are used in asyncronous networking programs.
+/// [futures::stream::Stream of Bytes][stream] are used in the futures crate.
 /// A [`write_to`][ImageEncoder::write_to] method is also provided, which calls
-/// [`write_all`][write_all] for every chunk returned by the Iterator.
+/// [`Write::write_all`][write_all] for every chunk returned by the Iterator.
 /// The [`bytes`][ImageEncoder::bytes] method is provided for cases where the image has to
-/// fit into a linear piece of memory
+/// fit into a linear piece of memory. In that case all of the chunks get copied into
+/// a single linear piece of memory.
 ///
 /// [write_all]: std::io::Write::write_all
 /// [stream]: https://docs.rs/futures-core/0.3/futures_core/stream/trait.Stream.html
 ///
-/// For example saving the file to disk could be done like so:
+/// ## Saving a file to disk
 ///
 /// ```rust,no_run
 /// # use std::io::{Result, Write};
@@ -45,12 +46,12 @@ pub use read::ImageEncoderReader;
 /// This struct is created by the `encoder` method on
 ///
 /// * [`RiffChunk`][crate::riff::RiffContent::encoder]
-/// * [`RiffContent`][crate::riff::RiffContent::encoder].
-/// * [`WebP`][crate::webp::WebP::encoder].
-/// * [`Jpeg`][crate::jpeg::Jpeg::encoder].
-/// * [`JpegSegment`][crate::jpeg::JpegSegment::encoder].
-/// * [`Png`][crate::png::Png::encoder].
-/// * [`PngChunk`][crate::png::PngChunk::encoder].
+/// * [`RiffContent`][crate::riff::RiffContent::encoder]
+/// * [`WebP`][crate::webp::WebP::encoder]
+/// * [`Jpeg`][crate::jpeg::Jpeg::encoder]
+/// * [`JpegSegment`][crate::jpeg::JpegSegment::encoder]
+/// * [`Png`][crate::png::Png::encoder]
+/// * [`PngChunk`][crate::png::PngChunk::encoder]
 ///
 /// See their documentation for more.
 #[derive(Debug, Clone)]

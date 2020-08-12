@@ -8,7 +8,7 @@ pub trait ImageICC {
     /// Overwrites the pre-existing ICC Profile of this image.
     ///
     /// Removes any pre-existing ICC Profile from this image.
-    /// Adds a new ICC Profile if the `profile` is `Some`.
+    /// Adds a new ICC Profile if `profile` is `Some`.
     fn set_icc_profile(&mut self, profile: Option<Bytes>);
 }
 
