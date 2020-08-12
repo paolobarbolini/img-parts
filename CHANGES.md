@@ -14,6 +14,7 @@
   `Iterator`, or copy every piece into a linear piece of memory and returning it.
 * Tidied up and wrote more meaninful errors in the `Error` enum.
 * Implemented `std::error::Error` for the `Error` enum.
+* Added `no_std` support via the `std` feature, which is enabled by default.
 * Bumped the MSRV to 1.39.0.
 * Removed the `byteorder` crate.
 * Improved the documentation and added examples.
