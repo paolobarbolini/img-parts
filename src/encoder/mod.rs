@@ -53,7 +53,7 @@ pub use read::ImageEncoderReader;
 /// * [`PngChunk`][crate::png::PngChunk::encoder].
 ///
 /// See their documentation for more.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct ImageEncoder<I> {
     inner: I,

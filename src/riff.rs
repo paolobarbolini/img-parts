@@ -19,7 +19,7 @@ pub struct RiffChunk {
 }
 
 /// The contents of a RIFF chunk
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum RiffContent {
     List {
         kind: Option<[u8; 4]>,

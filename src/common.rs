@@ -7,6 +7,7 @@ use crate::webp::{is_webp, WebP};
 use crate::{ImageEXIF, ImageICC, Result};
 
 /// An enum wrapping the common functions shared by the different image formats
+#[derive(Debug)]
 pub enum DynImage {
     Jpeg(Jpeg),
     Png(Png),
