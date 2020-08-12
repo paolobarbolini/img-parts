@@ -5,18 +5,14 @@
 [![Rustc Version 1.39.0+](https://img.shields.io/badge/rustc-1.39.0+-lightgray.svg)](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html)
 [![CI](https://github.com/paolobarbolini/img-parts/workflows/CI/badge.svg)](https://github.com/paolobarbolini/img-parts/actions?query=workflow%3ACI)
 
-**NOTE:** this README refers to the upcoming 0.2.0 version, which hasn't been released yet.
-If you are looking for examples for the 0.1.1 version take a look at the
-[`0.1.x branch`](https://github.com/paolobarbolini/img-parts/tree/v0.1.x).
-
 The `img-parts` crate provides a low level API for reading and
 writing containers from various image formats, and a high level
 API for reading and writing raw ICC profiles and EXIF metadata.
 
-Examples can be found in the `examples` directory on GitHub.
-
 It currently supports `Jpeg`, `Png` and `RIFF` (with some helper
 functions for `WebP`).
+
+More examples can be found in the `examples` directory on GitHub.
 
 ## Reading and writing raw ICCP and EXIF metadata
 
