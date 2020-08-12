@@ -70,7 +70,7 @@ mod tests {
     }
 
     #[test]
-    fn image_encoder_iter() {
+    fn image_encoder_reader_read() {
         let encoder_at = FakeEncodeAt {
             vec: vec![
                 Bytes::from_static(b"abcd"),
