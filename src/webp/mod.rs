@@ -1,4 +1,6 @@
-use std::convert::TryInto;
+use alloc::vec::Vec;
+use core::convert::TryInto;
+#[cfg(feature = "std")]
 use std::io::{self, Write};
 
 use bytes::{BufMut, Bytes, BytesMut};
@@ -199,6 +201,7 @@ impl WebP {
     #[inline]
     #[doc(hidden)]
     #[deprecated(since = "0.2.0", note = "Please use WebP::encoder().write_to(writer)")]
+    #[cfg(feature = "std")]
     pub fn write_to(self, w: &mut dyn Write) -> io::Result<()> {
         self.encoder().write_to(w)?;
         Ok(())

@@ -1,8 +1,11 @@
+#[cfg(feature = "std")]
 use std::io::{self, Write};
 
 use bytes::{Bytes, BytesMut};
 
+#[cfg(feature = "std")]
 mod read;
+#[cfg(feature = "std")]
 pub use read::ImageEncoderReader;
 
 /// An encoder for and image container or for an image chunk
@@ -32,6 +35,7 @@ pub use read::ImageEncoderReader;
 /// # use bytes::Bytes;
 /// # use img_parts::{ImageEncoder};
 /// # use img_parts::riff::{RiffChunk, RiffContent};
+/// # #[cfg(feature = "std")]
 /// # fn run() -> Result<()> {
 /// // some RiffChunk just for this example
 /// // this would also work with anything else from this crate that implements `encoder`
@@ -64,6 +68,8 @@ pub struct ImageEncoder<I> {
 impl<I: EncodeAt> ImageEncoder<I> {
     /// Turns this `ImageEncoder` into a reader that will never fail
     #[inline]
+    #[cfg(feature = "std")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     pub fn read(self) -> ImageEncoderReader<I> {
         ImageEncoderReader::from(self)
     }
@@ -75,6 +81,8 @@ impl<I: EncodeAt> ImageEncoder<I> {
     /// # Errors
     ///
     /// This methods fails if writing fails.
+    #[cfg(feature = "std")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     pub fn write_to<W: Write>(self, mut writer: W) -> io::Result<u64> {
         let mut len = 0;
 
@@ -132,9 +140,13 @@ pub trait EncodeAt {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "std")]
+    use std::io::Read;
+    use alloc::vec::Vec;
+    use alloc::vec;
+
     use super::{EncodeAt, ImageEncoder};
     use bytes::Bytes;
-    use std::io::Read;
 
     struct FakeEncodeAt {
         vec: Vec<Bytes>,
@@ -168,6 +180,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn image_encoder_read() {
         let encoder_at = FakeEncodeAt {
             vec: vec![
@@ -199,6 +212,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn image_encoder_read_buffered() {
         let encoder_at = FakeEncodeAt {
             vec: vec![
@@ -234,6 +248,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn image_encoder_write_to() {
         let encoder_at = FakeEncodeAt {
             vec: vec![

@@ -1,8 +1,3 @@
-#![deny(missing_debug_implementations)]
-#![doc(html_root_url = "https://docs.rs/img-parts/0.1.1")]
-// TODO: remove this once the MSRV is 1.42.0
-#![allow(clippy::match_like_matches_macro)]
-
 //! # img-parts
 //!
 //! The `img-parts` crate provides a low level api for reading and
@@ -17,6 +12,7 @@
 //! ```rust,no_run
 //! # use std::result::Result;
 //! # use std::error::Error;
+//! # #[cfg(feature = "std")]
 //! # fn run() -> Result<(), Box<dyn Error + 'static>> {
 //! use std::fs::{self, File};
 //!
@@ -44,6 +40,7 @@
 //! ```rust,no_run
 //! # use std::result::Result;
 //! # use std::error::Error;
+//! # #[cfg(feature = "std")]
 //! # fn run() -> Result<(), Box<dyn Error + 'static>> {
 //! use std::fs::{self, File};
 //!
@@ -64,10 +61,20 @@
 //! # }
 //! ```
 
+#![deny(missing_debug_implementations)]
+#![doc(html_root_url = "https://docs.rs/img-parts/0.1.1")]
+// TODO: remove this once the MSRV is 1.42.0
+#![allow(clippy::match_like_matches_macro)]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
 pub use bytes::Bytes;
 
 pub use common::DynImage;
-pub use encoder::{ImageEncoder, ImageEncoderReader};
+pub use encoder::ImageEncoder;
+#[cfg(feature = "std")]
+pub use encoder::ImageEncoderReader;
 pub use error::{Error, Result};
 pub use traits::{ImageEXIF, ImageICC};
 

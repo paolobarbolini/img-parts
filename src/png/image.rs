@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use miniz_oxide::deflate::compress_to_vec_zlib;
 use miniz_oxide::inflate::decompress_to_vec_zlib;

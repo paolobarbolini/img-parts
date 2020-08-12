@@ -1,7 +1,8 @@
+use core::fmt;
+#[cfg(feature = "std")]
 use std::error::Error as StdError;
-use std::fmt;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 /// The Errors that may occur when processing an image.
 #[derive(Debug, Clone, PartialEq)]
@@ -28,4 +29,5 @@ impl fmt::Display for Error {
     }
 }
 
+#[cfg(feature = "std")]
 impl StdError for Error {}

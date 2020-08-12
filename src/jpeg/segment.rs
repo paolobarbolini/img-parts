@@ -1,5 +1,6 @@
-use std::convert::TryInto;
-use std::fmt;
+use core::convert::TryInto;
+use core::fmt;
+#[cfg(feature = "std")]
 use std::io::{self, Write};
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
@@ -175,6 +176,7 @@ impl JpegSegment {
         since = "0.2.0",
         note = "Please use JpegSegment::encoder().write_to(writer)"
     )]
+    #[cfg(feature = "std")]
     pub fn write_to(self, w: &mut dyn Write) -> io::Result<()> {
         self.encoder().write_to(w)?;
         Ok(())

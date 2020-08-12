@@ -1,5 +1,5 @@
+use core::mem;
 use std::io::{Read, Result};
-use std::mem;
 
 use bytes::Bytes;
 
@@ -9,6 +9,7 @@ use super::{EncodeAt, ImageEncoder};
 ///
 /// This struct is created by the [`read`][ImageEncoder::read] method on [`ImageEncoder`][ImageEncoder]
 #[derive(Debug)]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub struct ImageEncoderReader<I> {
     inner: ImageEncoder<I>,
     buf: Bytes,

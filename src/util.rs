@@ -1,5 +1,5 @@
-use std::convert::TryInto;
-use std::mem;
+use core::convert::TryInto;
+use core::mem;
 
 use bytes::{Buf, Bytes};
 

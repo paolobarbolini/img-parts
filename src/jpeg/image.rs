@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+#[cfg(feature = "std")]
 use std::io::{self, Write};
 
 use bytes::{Buf, Bytes, BytesMut};
@@ -122,6 +124,7 @@ impl Jpeg {
     #[inline]
     #[doc(hidden)]
     #[deprecated(since = "0.2.0", note = "Please use Jpeg::encoder().write_to(writer)")]
+    #[cfg(feature = "std")]
     pub fn write_to(self, w: &mut dyn Write) -> io::Result<()> {
         self.encoder().write_to(w)?;
         Ok(())
@@ -194,7 +197,7 @@ impl ImageICC for Jpeg {
             let segments_n = (profile.len() / ICC_SEGMENT_MAX_SIZE + 1) as u8;
             for i in 0..segments_n {
                 let start = ICC_SEGMENT_MAX_SIZE * i as usize;
-                let end = std::cmp::min(profile.len(), start + ICC_SEGMENT_MAX_SIZE);
+                let end = core::cmp::min(profile.len(), start + ICC_SEGMENT_MAX_SIZE);
 
                 let segment = JpegSegment::new_icc(i + 1, segments_n, profile.slice(start..end));
                 self.segments.insert(3, segment);
