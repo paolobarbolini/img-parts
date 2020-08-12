@@ -9,7 +9,7 @@ use super::markers::{self, has_entropy, has_length};
 use super::ICC_PREFIX_SIZE;
 use crate::encoder::{EncodeAt, ImageEncoder};
 use crate::util::{read_checked, split_to_checked};
-use crate::{Result, EXIF_DATA_PREFIX};
+use crate::{Error, Result, EXIF_DATA_PREFIX};
 
 const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 
@@ -74,7 +74,9 @@ impl JpegSegment {
     }
 
     pub(crate) fn from_bytes(marker: u8, b: &mut Bytes) -> Result<JpegSegment> {
-        let size = read_checked(b, |b| b.get_u16())? - 2;
+        let size = read_checked(b, |b| b.get_u16())?
+            .checked_sub(2)
+            .ok_or(Error::Truncated)?;
         let contents = split_to_checked(b, size as usize)?;
 
         if !has_entropy(marker) {
