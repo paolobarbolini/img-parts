@@ -1,3 +1,9 @@
+## [0.2.1]
+
+* Fix docs.rs build
+
+[0.2.1]: https://github.com/paolobarbolini/img-parts/compare/v0.2.0...v0.2.1
+
 ## [0.2.0]
 
 * Added support for `Png`.
