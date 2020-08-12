@@ -104,6 +104,10 @@ impl EncodeAt for Png {
             }
         }
     }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
 }
 
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html#C.iCCP

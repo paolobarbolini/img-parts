@@ -154,6 +154,10 @@ impl EncodeAt for Jpeg {
             }
         }
     }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
 }
 
 impl ImageICC for Jpeg {

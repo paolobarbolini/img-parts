@@ -62,6 +62,10 @@ impl EncodeAt for DynImage {
             Self::WebP(webp) => webp.inner().encode_at(pos),
         }
     }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
 }
 
 impl ImageICC for DynImage {

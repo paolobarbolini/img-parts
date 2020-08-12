@@ -206,6 +206,10 @@ impl EncodeAt for JpegSegment {
             }
         }
     }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
 }
 
 impl fmt::Debug for JpegSegment {

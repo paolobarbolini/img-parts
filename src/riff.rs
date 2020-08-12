@@ -125,6 +125,10 @@ impl EncodeAt for RiffChunk {
             }
         }
     }
+
+    fn len(&self) -> usize {
+        self.len() as usize
+    }
 }
 
 #[allow(clippy::len_without_is_empty)]
@@ -251,6 +255,10 @@ impl EncodeAt for RiffContent {
                 }
             },
         }
+    }
+
+    fn len(&self) -> usize {
+        self.len() as usize
     }
 }
 

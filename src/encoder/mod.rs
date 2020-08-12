@@ -93,7 +93,7 @@ impl<I: EncodeAt> ImageEncoder<I> {
     /// If possible [`write_to`][Self::write_to] should be used instead,
     /// since it avoids creating a second in memory copy of the file.
     pub fn bytes(self) -> Bytes {
-        let mut bytes = BytesMut::new();
+        let mut bytes = BytesMut::with_capacity(self.inner.len());
         for piece in self {
             bytes.extend_from_slice(&piece);
         }
@@ -125,6 +125,8 @@ impl<I: EncodeAt> From<I> for ImageEncoder<I> {
 
 pub trait EncodeAt {
     fn encode_at(&self, pos: &mut usize) -> Option<Bytes>;
+
+    fn len(&self) -> usize;
 }
 
 #[cfg(test)]
@@ -140,6 +142,10 @@ mod tests {
     impl EncodeAt for FakeEncodeAt {
         fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
             self.vec.get(*pos).cloned()
+        }
+
+        fn len(&self) -> usize {
+            self.vec.iter().map(|buf| buf.len()).sum()
         }
     }
 

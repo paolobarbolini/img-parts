@@ -102,6 +102,10 @@ impl EncodeAt for PngChunk {
             }
         }
     }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
 }
 
 impl fmt::Debug for PngChunk {
