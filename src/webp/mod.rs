@@ -113,7 +113,7 @@ impl WebP {
             let flags = WebPFlags::from_webp(self);
             let mut content = BytesMut::with_capacity(10);
 
-            content.extend_from_slice(&flags.0.to_vec());
+            content.extend_from_slice(&flags.0);
 
             let buf = u24_to_le_bytes(width - 1);
             content.extend_from_slice(&buf);
