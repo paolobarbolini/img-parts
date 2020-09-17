@@ -1,3 +1,9 @@
+## [0.2.2]
+
+* Fix potential integer overflow when calculating jpeg segment size
+
+[0.2.2]: https://github.com/paolobarbolini/img-parts/compare/v0.2.1...v0.2.2
+
 ## [0.2.1]
 
 * Fix docs.rs build
