@@ -95,6 +95,7 @@ pub(crate) fn has_length(marker: u8) -> bool {
         SOS => true,
         COM => true,
         DQT => true,
+        DRI => true,
         _ => false,
     }
 }
