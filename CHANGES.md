@@ -1,3 +1,9 @@
+## [0.2.3]
+
+* Fix decoding JPEGs containing a DRI segment
+
+[0.2.3]: https://github.com/paolobarbolini/img-parts/compare/v0.2.2...v0.2.3
+
 ## [0.2.2]
 
 * Fix potential integer overflow when calculating jpeg segment size

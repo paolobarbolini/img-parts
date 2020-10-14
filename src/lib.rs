@@ -63,7 +63,7 @@
 
 #![deny(missing_debug_implementations)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/img-parts/0.2.2")]
+#![doc(html_root_url = "https://docs.rs/img-parts/0.2.3")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 // TODO: remove this once the MSRV is 1.42.0
 #![allow(clippy::match_like_matches_macro)]
