@@ -15,7 +15,7 @@ exclude = [
 ]
 
 [dependencies]
-bytes = { version = "0.5.3", default-features = false }
+bytes = { version = "0.6", default-features = false }
 crc32fast = { version = "1.1.1", default-features = false }
 miniz_oxide = "0.4"
 

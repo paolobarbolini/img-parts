@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::Path;
 use std::process::exit;
 
-use bytes::buf::BufMutExt;
+use bytes::buf::BufMut;
 use bytes::{Bytes, BytesMut};
 use img_parts::{DynImage, ImageEXIF, ImageICC};
 
