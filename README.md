@@ -2,6 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/img-parts.svg)](https://crates.io/crates/img-parts)
 [![Documentation](https://docs.rs/img-parts/badge.svg)](https://docs.rs/img-parts)
+[![dependency status](https://deps.rs/crate/img-parts/0.2.3/status.svg)](https://deps.rs/crate/img-parts/0.2.3)
 [![Rustc Version 1.39.0+](https://img.shields.io/badge/rustc-1.39.0+-lightgray.svg)](https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html)
 [![CI](https://github.com/paolobarbolini/img-parts/workflows/CI/badge.svg)](https://github.com/paolobarbolini/img-parts/actions?query=workflow%3ACI)
 
