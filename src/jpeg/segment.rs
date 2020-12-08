@@ -6,7 +6,6 @@ use std::io::{self, Write};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use super::markers::{self, has_entropy, has_length};
-use super::ICC_PREFIX_SIZE;
 use crate::encoder::{EncodeAt, ImageEncoder};
 use crate::util::{read_checked, split_to_checked};
 use crate::{Error, Result, EXIF_DATA_PREFIX};
@@ -137,36 +136,24 @@ impl JpegSegment {
 
     /// Returns the ICC segment data if this `JpegSegment` is an ICC segment.
     pub(super) fn icc(&self) -> Option<(u8, u8, Bytes)> {
-        if self.contents.len() < ICC_PREFIX_SIZE {
+        if self.marker != markers::APP2 || !self.contents.starts_with(ICC_DATA_PREFIX) {
             return None;
         }
 
-        let mut b = self.contents.clone();
-        let prefix = b.split_to(ICC_DATA_PREFIX.len());
+        let mut b = self.contents.slice(ICC_DATA_PREFIX.len()..);
 
-        if self.marker == markers::APP2 && prefix.bytes() == ICC_DATA_PREFIX {
-            // sequence number (between 1 and N. of sequence numbers inclusive)
-            let seqno = b.get_u8();
-            // number of sequences
-            let num = b.get_u8();
+        // sequence number (between 1 and N. of sequence numbers inclusive)
+        let seqno = b.get_u8();
+        // number of sequences
+        let num = b.get_u8();
 
-            Some((seqno, num, b))
-        } else {
-            None
-        }
+        Some((seqno, num, b))
     }
 
     /// Returns the EXIF segment data if this `JpegSegment` is an EXIF segment.
     pub(super) fn exif(&self) -> Option<Bytes> {
-        if self.contents.len() < EXIF_DATA_PREFIX.len() {
-            return None;
-        }
-
-        let mut b = self.contents.clone();
-        let prefix = b.split_to(EXIF_DATA_PREFIX.len());
-
-        if self.marker == markers::APP1 && prefix.bytes() == EXIF_DATA_PREFIX {
-            Some(b)
+        if self.marker == markers::APP1 && self.contents.starts_with(EXIF_DATA_PREFIX) {
+            Some(self.contents.slice(EXIF_DATA_PREFIX.len()..))
         } else {
             None
         }

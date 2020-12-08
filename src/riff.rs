@@ -191,12 +191,9 @@ impl RiffContent {
     /// Get `kind` and `subchunks` of this `RiffContent` if it is a `List`.
     ///
     /// Returns `None` if it is `Data`.
-    pub fn list(&self) -> Option<(&Option<[u8; 4]>, &Vec<RiffChunk>)> {
+    pub fn list(&self) -> Option<(Option<[u8; 4]>, &Vec<RiffChunk>)> {
         match self {
-            RiffContent::List {
-                ref kind,
-                ref subchunks,
-            } => Some((kind, subchunks)),
+            RiffContent::List { kind, subchunks } => Some((*kind, subchunks)),
             RiffContent::Data(_) => None,
         }
     }
@@ -204,10 +201,10 @@ impl RiffContent {
     /// Get the `data` of this `RiffContent` if it is `Data`.
     ///
     /// Returns `None` if it is a `List`.
-    pub fn data(&self) -> Option<Bytes> {
+    pub fn data(&self) -> Option<&Bytes> {
         match self {
             RiffContent::List { .. } => None,
-            RiffContent::Data(data) => Some(data.clone()),
+            RiffContent::Data(data) => Some(data),
         }
     }
 

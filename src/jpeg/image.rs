@@ -45,13 +45,12 @@ impl Jpeg {
                 continue;
             }
 
-            let mut marker;
-            loop {
-                marker = read_checked(&mut b, |b| b.get_u8())?;
+            let marker = loop {
+                let marker = read_checked(&mut b, |b| b.get_u8())?;
                 if marker != markers::P {
-                    break;
+                    break marker;
                 }
-            }
+            };
 
             if marker == markers::EOI {
                 break;
@@ -178,13 +177,13 @@ impl ImageICC for Jpeg {
         icc_parts.push(second);
 
         // sort by seqno
-        icc_parts.sort_by(|a, b| a.0.cmp(&b.0));
+        icc_parts.sort_by_key(|&(seqno, _, _)| seqno);
 
         let len = icc_parts.iter().map(|part| part.2.len()).sum::<usize>();
         let mut sequence = BytesMut::with_capacity(len);
 
         for part in icc_parts {
-            sequence.extend(part.2);
+            sequence.extend_from_slice(&part.2);
         }
 
         Some(sequence.freeze())

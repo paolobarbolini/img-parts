@@ -46,14 +46,8 @@ impl WebP {
     /// if the list's kind isn't "WEBP".
     pub fn new(riff: RiffChunk) -> Result<WebP> {
         match riff.content().list() {
-            Some((kind, _)) => {
-                if kind == &Some(*b"WEBP") {
-                    Ok(WebP { riff })
-                } else {
-                    Err(Error::WrongSignature)
-                }
-            }
-            None => Err(Error::WrongSignature),
+            Some((kind, _)) if kind == Some(*b"WEBP") => Ok(WebP { riff }),
+            _ => Err(Error::WrongSignature),
         }
     }
 
@@ -142,8 +136,10 @@ impl WebP {
         }
 
         if let Some(vp8) = self.chunk_by_id(CHUNK_VP8) {
-            let (width, height) = size_from_vp8_header(&vp8.content().data()?);
-            return Some((width as u32, height as u32));
+            if let Some(data) = vp8.content().data() {
+                let (width, height) = size_from_vp8_header(&data);
+                return Some((width as u32, height as u32));
+            }
         }
 
         None
@@ -222,7 +218,7 @@ impl WebP {
 
 impl ImageICC for WebP {
     fn icc_profile(&self) -> Option<Bytes> {
-        self.chunk_by_id(CHUNK_ICCP)?.content().data()
+        Some(self.chunk_by_id(CHUNK_ICCP)?.content().data()?.clone())
     }
 
     fn set_icc_profile(&mut self, profile: Option<Bytes>) {
@@ -253,10 +249,13 @@ impl ImageICC for WebP {
 
 impl ImageEXIF for WebP {
     fn exif(&self) -> Option<Bytes> {
-        self.chunk_by_id(CHUNK_EXIF)?
-            .content()
-            .data()
-            .map(|b| b.slice(6..))
+        let data = self.chunk_by_id(CHUNK_EXIF)?.content().data()?;
+
+        if data.starts_with(EXIF_DATA_PREFIX) {
+            Some(data.slice(EXIF_DATA_PREFIX.len()..))
+        } else {
+            None
+        }
     }
 
     fn set_exif(&mut self, exif: Option<Bytes>) {

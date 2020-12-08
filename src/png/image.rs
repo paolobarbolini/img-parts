@@ -115,19 +115,16 @@ impl EncodeAt for Png {
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html#C.iCCP
 impl ImageICC for Png {
     fn icc_profile(&self) -> Option<Bytes> {
-        let mut contents = self
-            .chunk_by_type(CHUNK_ICCP)
-            .map(|chunk| chunk.contents().clone())?;
+        let mut contents = self.chunk_by_type(CHUNK_ICCP)?.contents().clone();
 
-        // skip profile name and null separator
+        // skip nul-terminated profile name
         while contents.get_u8() != 0 {}
 
-        // check that the compression method is zlib
-        if contents.get_u8() != 0 {
-            return None;
+        // match on the compression method
+        match contents.get_u8() {
+            0 => decompress_to_vec_zlib(&contents).ok().map(Bytes::from),
+            _ => None,
         }
-
-        decompress_to_vec_zlib(&contents).ok().map(Bytes::from)
     }
 
     fn set_icc_profile(&mut self, profile: Option<Bytes>) {
@@ -135,10 +132,8 @@ impl ImageICC for Png {
 
         if let Some(profile) = profile {
             let mut contents = BytesMut::with_capacity(profile.len());
-            // profile name
-            contents.extend_from_slice(b"icc");
-            // null separator
-            contents.put_u8(0);
+            // profile name written as a C string
+            contents.extend_from_slice(b"icc\0");
             // compression method
             contents.put_u8(0);
             // compressed profile
@@ -154,8 +149,7 @@ impl ImageICC for Png {
 // https://ftp-osl.osuosl.org/pub/libpng/documents/pngext-1.5.0.html#C.eXIf
 impl ImageEXIF for Png {
     fn exif(&self) -> Option<Bytes> {
-        self.chunk_by_type(CHUNK_EXIF)
-            .map(|chunk| chunk.contents().clone())
+        Some(self.chunk_by_type(CHUNK_EXIF)?.contents().clone())
     }
 
     fn set_exif(&mut self, exif: Option<Bytes>) {
