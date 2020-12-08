@@ -1,8 +1,6 @@
 use alloc::vec::Vec;
 use core::convert::TryInto;
 use core::fmt;
-#[cfg(feature = "std")]
-use std::io::{self, Write};
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
@@ -91,18 +89,6 @@ impl RiffChunk {
         len += len % 2;
 
         len
-    }
-
-    #[inline]
-    #[doc(hidden)]
-    #[deprecated(
-        since = "0.2.0",
-        note = "Please use RiffChunk::encoder().write_to(writer)"
-    )]
-    #[cfg(feature = "std")]
-    pub fn write_to(self, w: &mut dyn Write) -> io::Result<()> {
-        self.encoder().write_to(w)?;
-        Ok(())
     }
 
     /// Returns an encoder for this `RiffChunk`
@@ -206,18 +192,6 @@ impl RiffContent {
             RiffContent::List { .. } => None,
             RiffContent::Data(data) => Some(data),
         }
-    }
-
-    #[inline]
-    #[doc(hidden)]
-    #[deprecated(
-        since = "0.2.0",
-        note = "Please use RiffContent::encoder().write_to(writer)"
-    )]
-    #[cfg(feature = "std")]
-    pub fn write_to(self, w: &mut dyn Write) -> io::Result<()> {
-        self.encoder().write_to(w)?;
-        Ok(())
     }
 
     /// Returns an encoder for this `RiffContent`

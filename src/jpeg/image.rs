@@ -1,6 +1,4 @@
 use alloc::vec::Vec;
-#[cfg(feature = "std")]
-use std::io::{self, Write};
 
 use bytes::{Buf, Bytes, BytesMut};
 
@@ -118,15 +116,6 @@ impl Jpeg {
             .iter()
             .map(|segment| segment.len_with_entropy())
             .sum::<usize>()
-    }
-
-    #[inline]
-    #[doc(hidden)]
-    #[deprecated(since = "0.2.0", note = "Please use Jpeg::encoder().write_to(writer)")]
-    #[cfg(feature = "std")]
-    pub fn write_to(self, w: &mut dyn Write) -> io::Result<()> {
-        self.encoder().write_to(w)?;
-        Ok(())
     }
 
     /// Create an [encoder][crate::ImageEncoder] for this `Jpeg`
