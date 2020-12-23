@@ -13,7 +13,7 @@ publish = false
 # focuses on formats supported by img-parts. This also makes the builds faster.
 image = { version = "0.23", default-features = false, features = ["jpeg", "png", "webp"] }
 img-parts = { path = "../../" }
-bytes = "0.6"
+bytes = "1"
 
 [profile.dev]
 # just making the example run a bit faster
