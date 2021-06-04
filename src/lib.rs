@@ -66,6 +66,8 @@
 #![doc(html_root_url = "https://docs.rs/img-parts/0.2.3")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
+// requires Rust >=1.42
+#![allow(clippy::match_like_matches_macro)]
 
 extern crate alloc;
 
