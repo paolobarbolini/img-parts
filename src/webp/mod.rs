@@ -135,7 +135,7 @@ impl WebP {
 
         if let Some(vp8) = self.chunk_by_id(CHUNK_VP8) {
             if let Some(data) = vp8.content().data() {
-                let (width, height) = size_from_vp8_header(&data);
+                let (width, height) = size_from_vp8_header(data);
                 return Some((width as u32, height as u32));
             }
         }
