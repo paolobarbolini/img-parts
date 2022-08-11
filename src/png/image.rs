@@ -41,7 +41,7 @@ impl Png {
             let chunk = PngChunk::from_bytes(&mut b)?;
 
             // Often PNG images found in the internet contain garbage after IEND chunk.
-            // Most PNG parser simply ignore everything after IEND chunk
+            // Most PNG parsers simply ignore everything after IEND chunk
             let is_end = chunk.kind() == CHUNK_IEND;
             chunks.push(chunk);
 
