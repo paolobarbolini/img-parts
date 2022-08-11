@@ -63,7 +63,6 @@
 
 #![deny(missing_debug_implementations)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/img-parts/0.2.3")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 // requires Rust >=1.42
