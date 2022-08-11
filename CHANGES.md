@@ -1,3 +1,10 @@
+## [0.3.0]
+
+* Ignore remaining PNG data after IEND chunk
+* Bump bytes crate to 1.0
+
+[0.3.0]: https://github.com/paolobarbolini/img-parts/compare/v0.2.3...v0.3.0
+
 ## [0.2.3]
 
 * Fix decoding JPEGs containing a DRI segment
