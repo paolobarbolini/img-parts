@@ -14,6 +14,7 @@ pub(crate) const SIGNATURE: &[u8] = &[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 
 
 pub const CHUNK_ICCP: [u8; 4] = [b'i', b'C', b'C', b'P'];
 pub const CHUNK_EXIF: [u8; 4] = [b'e', b'X', b'I', b'f'];
+pub const CHUNK_IEND: [u8; 4] = [b'I', b'E', b'N', b'D'];
 
 /// The representation of a Png image
 #[derive(Debug, Clone, PartialEq)]
@@ -38,7 +39,15 @@ impl Png {
         let mut chunks = Vec::with_capacity(8);
         while !b.is_empty() {
             let chunk = PngChunk::from_bytes(&mut b)?;
+
+            // Often PNG images found in the internet contain garbage after IEND chunk.
+            // Most PNG parser simply ignore everything after IEND chunk
+            let is_end = chunk.kind() == CHUNK_IEND;
             chunks.push(chunk);
+
+            if is_end {
+                break;
+            }
         }
 
         Ok(Png { chunks })
