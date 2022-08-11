@@ -17,7 +17,7 @@ pub const CHUNK_EXIF: [u8; 4] = [b'e', b'X', b'I', b'f'];
 pub const CHUNK_IEND: [u8; 4] = [b'I', b'E', b'N', b'D'];
 
 /// The representation of a Png image
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Png {
     chunks: Vec<PngChunk>,
 }

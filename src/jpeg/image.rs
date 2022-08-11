@@ -15,7 +15,7 @@ pub const ICC_PREFIX_SIZE: usize = 2 + 14;
 const ICC_SEGMENT_MAX_SIZE: usize = 65535 - ICC_PREFIX_SIZE;
 
 /// The representation of a Jpeg image.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Jpeg {
     segments: Vec<JpegSegment>,
 }

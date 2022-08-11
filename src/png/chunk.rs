@@ -9,7 +9,7 @@ use crate::util::{read_checked, read_u8_len4_array, split_to_checked};
 use crate::{Error, Result};
 
 /// The representation of a chunk making up a [`Png`][super::Png]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct PngChunk {
     kind: [u8; 4],
     contents: Bytes,

@@ -5,7 +5,7 @@ use std::error::Error as StdError;
 pub type Result<T> = core::result::Result<T, Error>;
 
 /// The Errors that may occur when processing an image.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
     /// The file signature didn't match the expected signature
     WrongSignature,

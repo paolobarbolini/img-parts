@@ -11,7 +11,7 @@ use crate::{Error, Result, EXIF_DATA_PREFIX};
 const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 
 /// The representation of a segment making up a [`Jpeg`][super::Jpeg]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct JpegSegment {
     marker: u8,
     contents: Bytes,

@@ -1,6 +1,6 @@
 use super::{WebP, CHUNK_EXIF, CHUNK_ICCP};
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub struct WebPFlags(pub(super) [u8; 4]);
 
 impl WebPFlags {
@@ -13,11 +13,5 @@ impl WebPFlags {
             flags.0[0] |= 0b0000_1000;
         }
         flags
-    }
-}
-
-impl Default for WebPFlags {
-    fn default() -> Self {
-        Self([0x00, 0x00, 0x00, 0x00])
     }
 }
