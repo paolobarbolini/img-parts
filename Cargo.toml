@@ -8,6 +8,7 @@ categories = ["multimedia::images", "multimedia::encoding", "parser-implementati
 keywords = ["jpeg", "png", "icc", "exif", "no_std"]
 readme = "README.md"
 edition = "2021"
+rust-version = "1.57"
 
 exclude = [
     "tests/",
