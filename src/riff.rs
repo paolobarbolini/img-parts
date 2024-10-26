@@ -243,15 +243,9 @@ impl fmt::Debug for RiffChunk {
 }
 
 fn has_subchunks(id: [u8; 4]) -> bool {
-    match &id {
-        b"RIFF" | b"LIST" | b"seqt" => true,
-        _ => false,
-    }
+    matches!(&id, b"RIFF" | b"LIST" | b"seqt")
 }
 
 fn has_kind(id: [u8; 4]) -> bool {
-    match &id {
-        b"RIFF" | b"LIST" => true,
-        _ => false,
-    }
+    matches!(&id, b"RIFF" | b"LIST")
 }

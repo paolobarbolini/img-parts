@@ -65,8 +65,6 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
-// requires Rust >=1.42
-#![allow(clippy::match_like_matches_macro)]
 
 extern crate alloc;
 

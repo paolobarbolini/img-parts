@@ -88,21 +88,9 @@ pub const JPG13: u8 = 0xFD;
 pub const COM: u8 = 0xFE;
 
 pub(crate) fn has_length(marker: u8) -> bool {
-    match marker {
-        RST0..=RST7 => true,
-        APP0..=APP15 => true,
-        SOF0..=SOF15 => true,
-        SOS => true,
-        COM => true,
-        DQT => true,
-        DRI => true,
-        _ => false,
-    }
+    matches!(marker, RST0..=RST7 | APP0..=APP15 | SOF0..=SOF15 | SOS | COM | DQT | DRI)
 }
 
 pub(crate) fn has_entropy(marker: u8) -> bool {
-    match marker {
-        SOS => true,
-        _ => false,
-    }
+    matches!(marker, SOS)
 }
