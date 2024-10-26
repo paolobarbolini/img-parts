@@ -4,7 +4,7 @@
 [![Documentation](https://docs.rs/img-parts/badge.svg)](https://docs.rs/img-parts)
 [![dependency status](https://deps.rs/crate/img-parts/0.3.0/status.svg)](https://deps.rs/crate/img-parts/0.3.0)
 [![Rustc Version 1.57.0+](https://img.shields.io/badge/rustc-1.57.0+-lightgray.svg)](https://blog.rust-lang.org/2021/12/02/Rust-1.57.0.html)
-[![CI](https://github.com/paolobarbolini/img-parts/workflows/CI/badge.svg)](https://github.com/paolobarbolini/img-parts/actions?query=workflow%3ACI)
+[![CI](https://github.com/paolobarbolini/img-parts/actions/workflows/ci.yml/badge.svg)](https://github.com/paolobarbolini/img-parts/actions/workflows/ci.yml)
 
 The `img-parts` crate provides a low level API for reading and
 writing containers from various image formats, and a high level
