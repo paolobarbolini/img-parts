@@ -1,11 +1,10 @@
 use std::env::args;
 use std::fs::{self, File};
-use std::io::Write;
+use std::io::{Cursor, Write};
 use std::path::Path;
 use std::process::exit;
 
-use bytes::buf::BufMut;
-use bytes::{Bytes, BytesMut};
+use bytes::Bytes;
 use img_parts::{DynImage, ImageEXIF, ImageICC};
 
 fn main() {
@@ -66,9 +65,10 @@ fn save(img: image::DynamicImage, path: &Path, iccp: Option<Bytes>, exif: Option
     let mut out_file = File::create(path).expect("create output file");
 
     if iccp.is_some() || exif.is_some() {
-        let mut out = BytesMut::new().writer();
-        img.write_to(&mut out, out_format).expect("image encoded");
-        let out = out.into_inner().freeze();
+        let mut out = Vec::new();
+        img.write_to(&mut Cursor::new(&mut out), out_format)
+            .expect("image encoded");
+        let out = Bytes::from(out);
 
         match DynImage::from_bytes(out.clone()).expect("image loaded") {
             Some(mut dimg) => {
