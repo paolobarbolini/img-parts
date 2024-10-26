@@ -63,8 +63,8 @@ jobs:
           - name: linux / nightly -Z minimal-versions
             rust: nightly
             args: -Z minimal-versions
-          - name: linux / 1.40.0
-            rust: 1.40.0
+          - name: linux / 1.57.0
+            rust: 1.57.0
 
     steps:
       - name: Checkout
