@@ -7,7 +7,7 @@ repository = "https://github.com/paolobarbolini/img-parts"
 categories = ["multimedia::images", "multimedia::encoding", "parser-implementations"]
 keywords = ["jpeg", "png", "icc", "exif", "no_std"]
 readme = "README.md"
-edition = "2018"
+edition = "2021"
 
 exclude = [
     "tests/",

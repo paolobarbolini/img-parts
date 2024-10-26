@@ -1,5 +1,4 @@
 use alloc::vec::Vec;
-use core::convert::TryInto;
 use core::fmt;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
