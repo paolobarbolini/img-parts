@@ -8,7 +8,7 @@ use crate::util::{read_checked, read_u8_len4_array, split_to_checked};
 use crate::{Error, Result};
 
 // the 4 bytes signature
-const SIGNATURE: &[u8] = &[b'R', b'I', b'F', b'F'];
+const SIGNATURE: &[u8] = b"RIFF";
 
 /// The representation of a RIFF chunk
 #[derive(Clone, PartialEq)]
