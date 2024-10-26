@@ -20,7 +20,7 @@ miniz_oxide = "0.8"
 
 [features]
 default = ["std"]
-std = ["bytes/std", "crc32fast/std"]
+std = ["bytes/std", "crc32fast/std", "miniz_oxide/std"]
 
 [package.metadata.docs.rs]
 targets = []
