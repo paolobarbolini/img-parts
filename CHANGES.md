@@ -1,3 +1,12 @@
+## [0.3.1]
+
+* Bump MSRV to 1.57
+* Bump edition to 2021
+* Bump miniz_oxide crate to 0.8
+* Make license metadata SPDX compliant
+
+[0.3.0]: https://github.com/paolobarbolini/img-parts/compare/v0.3.0...v0.3.1
+
 ## [0.3.0]
 
 * Ignore remaining PNG data after IEND chunk
