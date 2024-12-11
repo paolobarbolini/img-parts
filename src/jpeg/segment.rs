@@ -201,6 +201,7 @@ impl fmt::Debug for JpegSegment {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec;
     use bytes::Bytes;
 
     #[test]
