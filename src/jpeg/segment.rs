@@ -179,12 +179,7 @@ impl EncodeAt for JpegSegment {
             _ => {
                 let decrement =
                     1 + !self.contents.is_empty() as usize + !self.entropy.is_empty() as usize;
-                if *pos >= decrement {
-                    *pos -= decrement;
-                } else {
-                    // Prevent underflow
-                    *pos = 0;
-                }
+                *pos = pos.saturating_sub(decrement);
                 None
             }
         }
@@ -210,8 +205,7 @@ mod tests {
 
     #[test]
     fn test_encode_at_underflow() {
-        let segment =
-            JpegSegment::new_with_entropy(0xFF, Vec::new().into(), Bytes::from(vec![4, 5, 6]));
+        let segment = JpegSegment::new_with_entropy(0xFF, Bytes::new(), Bytes::from(vec![4, 5, 6]));
 
         // This would cause an underflow if decrement not checked.
         let mut pos = 1;
