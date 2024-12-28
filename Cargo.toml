@@ -1,6 +1,6 @@
 [package]
 name = "img-parts"
-version = "0.3.1" # remember to update README.md
+version = "0.3.2" # remember to update README.md
 description = "Low level crate for reading and writing Jpeg, Png and RIFF image containers"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/paolobarbolini/img-parts"
