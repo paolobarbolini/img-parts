@@ -177,7 +177,9 @@ impl EncodeAt for JpegSegment {
             1 if !self.contents.is_empty() => Some(self.contents.clone()),
             2 if !self.entropy.is_empty() => Some(self.entropy.clone()),
             _ => {
-                *pos -= 1 + !self.contents.is_empty() as usize + !self.entropy.is_empty() as usize;
+                let decrement =
+                    1 + !self.contents.is_empty() as usize + !self.entropy.is_empty() as usize;
+                *pos = pos.saturating_sub(decrement);
                 None
             }
         }
@@ -193,5 +195,21 @@ impl fmt::Debug for JpegSegment {
         f.debug_struct("JpegSegment")
             .field("marker", &self.marker)
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::vec;
+    use bytes::Bytes;
+
+    #[test]
+    fn test_encode_at_underflow() {
+        let segment = JpegSegment::new_with_entropy(0xFF, Bytes::new(), Bytes::from(vec![4, 5, 6]));
+
+        // This would cause an underflow if decrement not checked.
+        let mut pos = 1;
+        segment.encode_at(&mut pos);
     }
 }
