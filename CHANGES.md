@@ -1,3 +1,9 @@
+## [0.3.3]
+
+* Support reading VP8L dimensions
+
+[0.3.3]: https://github.com/paolobarbolini/img-parts/compare/v0.3.2...v0.3.3
+
 ## [0.3.2]
 
 * Fix encoder underflow with malformed JPEGs
