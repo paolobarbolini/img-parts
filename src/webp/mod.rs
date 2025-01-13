@@ -139,6 +139,18 @@ impl WebP {
             }
         }
 
+        if let Some(vp8l) = self.chunk_by_id(CHUNK_VP8L) {
+            if let Some(data) = vp8l.content().data() {
+                if let Some(range) = data.get(1..5) {
+                    let size = u32::from_le_bytes(range.try_into().unwrap());
+                    let width = (size & 0x3FFF) + 1;
+                    let height = ((size >> 14) & 0x3FFF) + 1;
+
+                    return Some((width, height));
+                }
+            }
+        }
+
         None
     }
 
