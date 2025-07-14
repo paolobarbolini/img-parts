@@ -15,6 +15,14 @@ fn extract_webp_srgb() {
 }
 
 #[test]
+fn extract_webp_nomagic_exif() {
+    extract_webp_image(
+        "P1133897_AdobeRGB_exif.webp",
+        Some("P1133897_AdobeRGB.exif"),
+    );
+}
+
+#[test]
 fn extract_webp_adobergb() {
     extract_webp_image("P1133897_AdobeRGB.webp", Some("P1133897_AdobeRGB.exif"));
 }
