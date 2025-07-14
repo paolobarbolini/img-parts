@@ -9,7 +9,7 @@ fn rewrite_png_noprofile() {
 }
 
 fn extract_png_image(input: &str) {
-    let file = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read png"));
+    let file = Bytes::from(fs::read(format!("tests/images/{input}")).expect("read png"));
 
     let png = Png::from_bytes(file.clone()).unwrap();
     let png_len = png.len();

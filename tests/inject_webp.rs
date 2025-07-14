@@ -24,8 +24,8 @@ fn inject_webp_result1() {
 }
 
 fn inject_webp_noop(input: &str, icc: &str) {
-    let file = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read webp"));
-    let icc = Bytes::from(fs::read(format!("tests/images/{}", icc)).expect("read icc"));
+    let file = Bytes::from(fs::read(format!("tests/images/{input}")).expect("read webp"));
+    let icc = Bytes::from(fs::read(format!("tests/images/{icc}")).expect("read icc"));
 
     let mut webp = WebP::from_bytes(file.clone()).unwrap();
     webp.set_icc_profile(Some(icc));
@@ -36,8 +36,8 @@ fn inject_webp_noop(input: &str, icc: &str) {
 }
 
 fn inject_webp_result(input: &str, output: &str, icc: &str) {
-    let file = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read webp"));
-    let icc = Bytes::from(fs::read(format!("tests/images/{}", icc)).expect("read icc"));
+    let file = Bytes::from(fs::read(format!("tests/images/{input}")).expect("read webp"));
+    let icc = Bytes::from(fs::read(format!("tests/images/{icc}")).expect("read icc"));
 
     let mut webp = WebP::from_bytes(file).expect("parse webp");
     webp.set_icc_profile(Some(icc));
@@ -45,6 +45,6 @@ fn inject_webp_result(input: &str, output: &str, icc: &str) {
     let out = webp.encoder().bytes();
 
     let expected =
-        Bytes::from(fs::read(format!("tests/images/{}", output)).expect("read expected webp"));
+        Bytes::from(fs::read(format!("tests/images/{output}")).expect("read expected webp"));
     assert_eq!(out, expected);
 }

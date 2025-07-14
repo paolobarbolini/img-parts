@@ -20,13 +20,13 @@ fn extract_webp_adobergb() {
 }
 
 fn extract_webp_image(input: &str, icc: Option<&str>) {
-    let buf = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read webp"));
+    let buf = Bytes::from(fs::read(format!("tests/images/{input}")).expect("read webp"));
 
     let webp = WebP::from_bytes(buf).unwrap();
     let iccp = webp.icc_profile();
 
     if let Some(icc) = icc {
-        let saved = Bytes::from(fs::read(format!("tests/images/{}", icc)).expect("read icc"));
+        let saved = Bytes::from(fs::read(format!("tests/images/{icc}")).expect("read icc"));
         assert_eq!(iccp, Some(saved));
     } else {
         assert!(iccp.is_none());
