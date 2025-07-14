@@ -33,7 +33,7 @@ fn main() {
                 // marker printed in HEX
                 let marker = format!("{:X}", segment.marker());
                 let len = segment.len_with_entropy();
-                println!("| {: <3} | {: <6} | {: <12} |", i, marker, len);
+                println!("| {i: <3} | {marker: <6} | {len: <12} |");
             }
         }
         DynImage::Png(png) => {
@@ -45,7 +45,7 @@ fn main() {
                 let kind = chunk.kind();
                 let kind = String::from_utf8_lossy(&kind);
                 let len = chunk.len();
-                println!("| {: <3} | {: <6} | {: <12} |", i, kind, len);
+                println!("| {i: <3} | {kind: <6} | {len: <12} |");
             }
         }
         DynImage::WebP(webp) => {
@@ -57,7 +57,7 @@ fn main() {
                 let id = chunk.id();
                 let id = String::from_utf8_lossy(&id).replace(0 as char, " ");
                 let len = chunk.len();
-                println!("| {: <3} | {: <6} | {: <12} |", i, id, len);
+                println!("| {i: <3} | {id: <6} | {len: <12} |");
             }
         }
     }

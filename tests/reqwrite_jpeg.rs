@@ -24,7 +24,7 @@ fn reqwrite_jpeg_plane() {
 }
 
 fn extract_jpeg_image(input: &str) {
-    let file = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read jpeg"));
+    let file = Bytes::from(fs::read(format!("tests/images/{input}")).expect("read jpeg"));
 
     let jpeg = Jpeg::from_bytes(file.clone()).unwrap();
     let jpeg_len = jpeg.len();

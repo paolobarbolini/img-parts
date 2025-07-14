@@ -25,7 +25,7 @@ fn extract_jpeg_plane() {
 }
 
 fn extract_jpeg_image(input: &str, icc: Option<&str>) {
-    let buf = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read jpeg"));
+    let buf = Bytes::from(fs::read(format!("tests/images/{input}")).expect("read jpeg"));
 
     let jpeg = Jpeg::from_bytes(buf).unwrap();
     let iccp = jpeg.icc_profile();
@@ -33,7 +33,7 @@ fn extract_jpeg_image(input: &str, icc: Option<&str>) {
     if let Some(icc) = icc {
         let iccp = iccp.unwrap();
 
-        let saved = Bytes::from(fs::read(format!("tests/images/{}", icc)).expect("read icc"));
+        let saved = Bytes::from(fs::read(format!("tests/images/{icc}")).expect("read icc"));
         assert_eq!(iccp, saved);
     } else {
         assert!(iccp.is_none());

@@ -24,7 +24,7 @@ fn reqwrite_webp_out() {
 }
 
 fn extract_webp_image(input: &str) {
-    let file = Bytes::from(fs::read(format!("tests/images/{}", input)).expect("read webp"));
+    let file = Bytes::from(fs::read(format!("tests/images/{input}")).expect("read webp"));
 
     let webp = WebP::from_bytes(file.clone()).unwrap();
     let webp_len = webp.len();
