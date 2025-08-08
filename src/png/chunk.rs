@@ -3,9 +3,11 @@ use core::fmt;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crc32fast::Hasher;
 
-use crate::encoder::{EncodeAt, ImageEncoder};
-use crate::util::{read_checked, read_u8_array, split_to_checked};
-use crate::{Error, Result};
+use crate::{
+    encoder::{EncodeAt, ImageEncoder},
+    util::{read_checked, read_u8_array, split_to_checked},
+    Error, Result,
+};
 
 /// The representation of a chunk making up a [`Png`][super::Png]
 #[derive(Clone, PartialEq, Eq)]

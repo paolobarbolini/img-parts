@@ -1,8 +1,7 @@
 use std::fs;
 
 use bytes::Bytes;
-use img_parts::webp::WebP;
-use img_parts::ImageICC;
+use img_parts::{webp::WebP, ImageICC};
 
 #[test]
 fn inject_webp_noop1() {

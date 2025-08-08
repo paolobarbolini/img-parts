@@ -3,9 +3,11 @@ use core::fmt;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use super::markers::{self, has_entropy, has_length};
-use crate::encoder::{EncodeAt, ImageEncoder};
-use crate::util::{read_checked, split_to_checked};
-use crate::{Error, Result, EXIF_DATA_PREFIX};
+use crate::{
+    encoder::{EncodeAt, ImageEncoder},
+    util::{read_checked, split_to_checked},
+    Error, Result, EXIF_DATA_PREFIX,
+};
 
 const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
 
@@ -200,9 +202,11 @@ impl fmt::Debug for JpegSegment {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use alloc::vec;
+
     use bytes::Bytes;
+
+    use super::*;
 
     #[test]
     fn test_encode_at_underflow() {

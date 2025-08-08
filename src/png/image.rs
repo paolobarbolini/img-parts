@@ -1,13 +1,14 @@
 use alloc::vec::Vec;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use miniz_oxide::deflate::compress_to_vec_zlib;
-use miniz_oxide::inflate::decompress_to_vec_zlib;
+use miniz_oxide::{deflate::compress_to_vec_zlib, inflate::decompress_to_vec_zlib};
 
 use super::PngChunk;
-use crate::encoder::{EncodeAt, ImageEncoder};
-use crate::util::read_u8_array;
-use crate::{Error, ImageEXIF, ImageICC, Result};
+use crate::{
+    encoder::{EncodeAt, ImageEncoder},
+    util::read_u8_array,
+    Error, ImageEXIF, ImageICC, Result,
+};
 
 // the 8 byte signature
 pub(crate) const SIGNATURE: &[u8] = &[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];

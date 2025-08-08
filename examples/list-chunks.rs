@@ -1,6 +1,4 @@
-use std::env::args;
-use std::fs;
-use std::process::exit;
+use std::{env::args, fs, process::exit};
 
 use img_parts::DynImage;
 

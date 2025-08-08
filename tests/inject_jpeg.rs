@@ -1,8 +1,7 @@
 use std::fs;
 
 use bytes::Bytes;
-use img_parts::jpeg::Jpeg;
-use img_parts::ImageICC;
+use img_parts::{jpeg::Jpeg, ImageICC};
 
 #[test]
 fn inject_jpeg_noop1() {

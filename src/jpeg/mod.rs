@@ -1,5 +1,4 @@
-pub use self::image::Jpeg;
-pub use self::segment::JpegSegment;
+pub use self::{image::Jpeg, segment::JpegSegment};
 
 mod image;
 pub mod markers;

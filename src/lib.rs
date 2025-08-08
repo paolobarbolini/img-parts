@@ -16,8 +16,7 @@
 //! # fn run() -> Result<(), Box<dyn Error + 'static>> {
 //! use std::fs::{self, File};
 //!
-//! use img_parts::jpeg::Jpeg;
-//! use img_parts::{ImageEXIF, ImageICC};
+//! use img_parts::{jpeg::Jpeg, ImageEXIF, ImageICC};
 //!
 //! # let another_icc_profile = Vec::new();
 //! # let new_exif_metadata = Vec::new();
@@ -44,8 +43,10 @@
 //! # fn run() -> Result<(), Box<dyn Error + 'static>> {
 //! use std::fs::{self, File};
 //!
-//! use img_parts::jpeg::{markers, Jpeg, JpegSegment};
-//! use img_parts::Bytes;
+//! use img_parts::{
+//!     jpeg::{markers, Jpeg, JpegSegment},
+//!     Bytes,
+//! };
 //!
 //! let input = fs::read("img.jpg")?;
 //! let output = File::create("out.jpg")?;
@@ -69,7 +70,6 @@
 extern crate alloc;
 
 pub use bytes::Bytes;
-
 pub use common::DynImage;
 pub use encoder::ImageEncoder;
 #[cfg(feature = "std")]

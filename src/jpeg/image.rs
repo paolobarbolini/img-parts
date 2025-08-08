@@ -2,11 +2,12 @@ use alloc::vec::Vec;
 
 use bytes::{Buf, Bytes, BytesMut};
 
-use super::markers;
-use super::JpegSegment;
-use crate::encoder::{EncodeAt, ImageEncoder};
-use crate::util::read_checked;
-use crate::{Error, ImageEXIF, ImageICC, Result};
+use super::{markers, JpegSegment};
+use crate::{
+    encoder::{EncodeAt, ImageEncoder},
+    util::read_checked,
+    Error, ImageEXIF, ImageICC, Result,
+};
 
 // segment size (2 byte) - segment meta (14 byte)
 pub const ICC_PREFIX_SIZE: usize = 2 + 14;

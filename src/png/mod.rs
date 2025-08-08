@@ -1,5 +1,4 @@
-pub use self::chunk::PngChunk;
-pub use self::image::Png;
+pub use self::{chunk::PngChunk, image::Png};
 
 mod chunk;
 mod image;

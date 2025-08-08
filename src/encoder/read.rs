@@ -51,9 +51,11 @@ impl<I> From<ImageEncoder<I>> for ImageEncoderReader<I> {
 
 #[cfg(test)]
 mod tests {
-    use super::{EncodeAt, ImageEncoder};
-    use bytes::Bytes;
     use std::io::Read;
+
+    use bytes::Bytes;
+
+    use super::{EncodeAt, ImageEncoder};
 
     struct FakeEncodeAt {
         vec: Vec<Bytes>,

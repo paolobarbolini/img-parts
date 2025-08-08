@@ -1,17 +1,16 @@
 use alloc::vec::Vec;
 
 use bytes::{Bytes, BytesMut};
+use flags::WebPFlags;
 
-use crate::encoder::ImageEncoder;
-use crate::riff::{RiffChunk, RiffContent};
-use crate::util::{u24_from_le_bytes, u24_to_le_bytes};
-use crate::vp8::size_from_vp8_header;
-use crate::vp8::VP8Kind;
 use crate::{
+    encoder::ImageEncoder,
+    riff::{RiffChunk, RiffContent},
+    util::{u24_from_le_bytes, u24_to_le_bytes},
+    vp8::{size_from_vp8_header, VP8Kind},
     Error, ImageEXIF, ImageICC, Result, EXIF_DATA_PREFIX, EXIF_START_PREFIX_BE,
     EXIF_START_PREFIX_LE,
 };
-use flags::WebPFlags;
 
 mod flags;
 
