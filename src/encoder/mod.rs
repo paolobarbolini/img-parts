@@ -8,24 +8,24 @@ mod read;
 #[cfg(feature = "std")]
 pub use read::ImageEncoderReader;
 
-/// An encoder for and image container or for an image chunk
+/// A streaming encoder for the binary representation of an image.
 ///
-/// As image containers contain multiple _chunks_, each one stored as a separate piece of memory,
-/// the representation of the entire file is fragmented in memory.
-/// This crate tries to be as efficient as possible with memory, by giving access to
-/// the underlying fragmented chunks representing the full file, which can then be written or
-/// streamed one at at time.
+/// Image data is composed of multiple chunks held in separate memory
+/// locations. This encoder provides a memory-efficient, mostly zero-copy
+/// way of encoding these fragmented chunks. Streaming the chunks one
+/// by one avoids the need to allocate a single, large contiguous
+/// buffer and the cost of having to memcpy the data into the buffer.
 ///
-/// Those chunks can be accessed through an `Iterator`, similar to how
-/// [futures::stream::Stream of Bytes][stream] are used in the futures crate.
-/// A [`write_to`][ImageEncoder::write_to] method is also provided, which calls
-/// [`Write::write_all`][write_all] for every chunk returned by the Iterator.
-/// The [`bytes`][ImageEncoder::bytes] method is provided for cases where the image has to
-/// fit into a linear piece of memory. In that case all of the chunks get copied into
-/// a single linear piece of memory.
+/// This can be done in the following ways:
 ///
-/// [write_all]: std::io::Write::write_all
-/// [stream]: https://docs.rs/futures-core/0.3/futures_core/stream/trait.Stream.html
+/// - `Iterator`: Iterate through each chunk individually.
+///   This is the lowest level and most powerful API.
+/// - `io::Write`: The [`write_to`][ImageEncoder::write_to] method provides a
+///   convenient way to write all chunks sequentially to any `std::io::Write`
+///   target, like a file or a network socket.
+/// - `Bytes`: The [`bytes`][ImageEncoder::bytes] method is
+///   available for cases requiring a single, contiguous byte buffer. It copies
+///   all chunks into a new [`Bytes`].
 ///
 /// ## Saving a file to disk
 ///
