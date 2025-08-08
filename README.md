@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/img-parts.svg)](https://crates.io/crates/img-parts)
 [![Documentation](https://docs.rs/img-parts/badge.svg)](https://docs.rs/img-parts)
-[![dependency status](https://deps.rs/crate/img-parts/0.3.3/status.svg)](https://deps.rs/crate/img-parts/0.3.3)
+[![dependency status](https://deps.rs/crate/img-parts/0.4.0/status.svg)](https://deps.rs/crate/img-parts/0.4.0)
 [![Rustc Version 1.63.0+](https://img.shields.io/badge/rustc-1.63.0+-lightgray.svg)](https://blog.rust-lang.org/2022/08/11/Rust-1.63.0/)
 [![CI](https://github.com/paolobarbolini/img-parts/actions/workflows/ci.yml/badge.svg)](https://github.com/paolobarbolini/img-parts/actions/workflows/ci.yml)
 
