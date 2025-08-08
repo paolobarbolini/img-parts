@@ -1,13 +1,16 @@
 use alloc::vec::Vec;
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Bytes, BytesMut};
 
 use crate::encoder::ImageEncoder;
 use crate::riff::{RiffChunk, RiffContent};
 use crate::util::{u24_from_le_bytes, u24_to_le_bytes};
 use crate::vp8::size_from_vp8_header;
 use crate::vp8::VP8Kind;
-use crate::{Error, ImageEXIF, ImageICC, Result, EXIF_DATA_PREFIX};
+use crate::{
+    Error, ImageEXIF, ImageICC, Result, EXIF_DATA_PREFIX, EXIF_START_PREFIX_BE,
+    EXIF_START_PREFIX_LE,
+};
 use flags::WebPFlags;
 
 mod flags;
@@ -249,24 +252,28 @@ impl ImageICC for WebP {
 
 impl ImageEXIF for WebP {
     fn exif(&self) -> Option<Bytes> {
+        const PREFIX_LEN: usize = EXIF_DATA_PREFIX.len();
         let data = self.chunk_by_id(CHUNK_EXIF)?.content().data()?;
 
-        if data.starts_with(EXIF_DATA_PREFIX) {
-            Some(data.slice(EXIF_DATA_PREFIX.len()..))
-        } else {
-            None
-        }
+        let raw_exif_offset =
+            if data.starts_with(EXIF_START_PREFIX_LE) || data.starts_with(EXIF_START_PREFIX_BE) {
+                Some(0)
+            } else if data.starts_with(&[EXIF_DATA_PREFIX, EXIF_START_PREFIX_LE].concat())
+                || data.starts_with(&[EXIF_DATA_PREFIX, EXIF_START_PREFIX_BE].concat())
+            {
+                Some(PREFIX_LEN)
+            } else {
+                None
+            };
+
+        raw_exif_offset.map(|offs| data.slice(offs..))
     }
 
     fn set_exif(&mut self, exif: Option<Bytes>) {
         self.remove_chunks_by_id(CHUNK_EXIF);
 
         if let Some(exif) = exif {
-            let mut contents = BytesMut::with_capacity(6 + exif.len());
-            contents.put(EXIF_DATA_PREFIX);
-            contents.put(exif);
-
-            let chunk = RiffChunk::new(CHUNK_EXIF, RiffContent::Data(contents.freeze()));
+            let chunk = RiffChunk::new(CHUNK_EXIF, RiffContent::Data(exif));
             self.chunks_mut().push(chunk);
         }
 
