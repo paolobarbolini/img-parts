@@ -34,19 +34,10 @@ where
     Ok(f(buf))
 }
 
-/// Convenience function to read a [u8; 4] using [`read_checked`][self::read_checked]
-pub fn read_u8_len4_array(buf: &mut Bytes) -> Result<[u8; 4]> {
+/// Convenience function to read a [u8; LEN] using [`read_checked`][self::read_checked]
+pub fn read_u8_array<const LEN: usize>(buf: &mut Bytes) -> Result<[u8; LEN]> {
     read_checked(buf, |buf| {
-        let mut array = [0; 4];
-        buf.copy_to_slice(&mut array);
-        array
-    })
-}
-
-/// Convenience function to read a [u8; 8] using [`read_checked`][self::read_checked]
-pub fn read_u8_len8_array(buf: &mut Bytes) -> Result<[u8; 8]> {
-    read_checked(buf, |buf| {
-        let mut array = [0; 8];
+        let mut array = [0; LEN];
         buf.copy_to_slice(&mut array);
         array
     })

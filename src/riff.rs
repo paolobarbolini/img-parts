@@ -4,7 +4,7 @@ use core::fmt;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use crate::encoder::{EncodeAt, ImageEncoder};
-use crate::util::{read_checked, read_u8_len4_array, split_to_checked};
+use crate::util::{read_checked, read_u8_array, split_to_checked};
 use crate::{Error, Result};
 
 // the 4 bytes signature
@@ -47,7 +47,7 @@ impl RiffChunk {
     }
 
     pub(crate) fn from_bytes_impl(b: &mut Bytes, check_riff_id: bool) -> Result<RiffChunk> {
-        let id: [u8; SIGNATURE.len()] = read_u8_len4_array(b)?;
+        let id: [u8; SIGNATURE.len()] = read_u8_array(b)?;
         if check_riff_id && id != SIGNATURE {
             return Err(Error::WrongSignature);
         }
@@ -127,7 +127,7 @@ impl RiffContent {
 
         if has_subchunks(id) {
             let kind = if has_kind(id) {
-                Some(read_u8_len4_array(&mut content)?)
+                Some(read_u8_array(&mut content)?)
             } else {
                 None
             };
