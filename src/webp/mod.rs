@@ -37,12 +37,12 @@ pub struct WebP {
 
 #[allow(clippy::len_without_is_empty)]
 impl WebP {
-    /// Construct a new `WebP` image from a [`RiffChunk`][crate::riff::RiffChunk].
+    /// Construct a new `WebP` image from a [`RiffChunk`].
     ///
     /// # Errors
     ///
-    /// This method returns a [`Error::WrongSignature`][crate::Error::WrongSignature]
-    /// if the content of the [`RiffChunk`][crate::riff::RiffChunk] isn't a `List` or
+    /// This method returns a [`Error::WrongSignature`]
+    /// if the content of the [`RiffChunk`] isn't a `List` or
     /// if the list's kind isn't "WEBP".
     pub fn new(riff: RiffChunk) -> Result<WebP> {
         match riff.content().list() {
