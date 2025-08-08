@@ -36,11 +36,10 @@ where
 
 /// Convenience function to read a [u8; LEN] using [`read_checked`][self::read_checked]
 pub fn read_u8_array<const LEN: usize>(buf: &mut Bytes) -> Result<[u8; LEN]> {
-    read_checked(buf, |buf| {
-        let mut array = [0; LEN];
-        buf.copy_to_slice(&mut array);
-        array
-    })
+    let mut array = [0; LEN];
+    buf.try_copy_to_slice(&mut array)
+        .map_err(|_| Error::Truncated)?;
+    Ok(array)
 }
 
 /// Check that `buf` is long enought to be split at `at`.
