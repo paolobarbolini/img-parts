@@ -62,7 +62,7 @@ jobs:
             rust: nightly
           - name: linux / nightly -Z minimal-versions
             rust: nightly
-            args: -Z minimal-versions
+            minimal_versions: true
           - name: linux / 1.63.0
             rust: 1.63.0
 
@@ -74,6 +74,10 @@ jobs:
         run: |
           rustup default ${{ matrix.rust }}
           rustup update --no-self-update ${{ matrix.rust }}
+
+      - name: Update dependencies for minimal versions
+        if: matrix.minimal_versions
+        run: cargo update -Zminimal-versions
 
       - name: Test
         run: |
