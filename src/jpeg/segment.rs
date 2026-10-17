@@ -178,7 +178,9 @@ impl EncodeAt for JpegSegment {
                 let mut vec = BytesMut::with_capacity(4);
                 vec.put_u8(markers::P);
                 vec.put_u8(self.marker());
-                vec.put_u16((self.len() - 2).try_into().unwrap());
+                if has_length(self.marker()) {
+                    vec.put_u16((self.len() - 2).try_into().unwrap());
+                }
 
                 Some(vec.freeze())
             }
@@ -221,5 +223,13 @@ mod tests {
         // This would cause an underflow if decrement not checked.
         let mut pos = 1;
         segment.encode_at(&mut pos);
+    }
+
+    #[test]
+    fn encode_without_length() {
+        // TEM, which has no length
+        let segment = JpegSegment::new(0x01);
+        assert_eq!(segment.len(), 2);
+        assert_eq!(segment.encoder().bytes(), [markers::P, 0x01][..]);
     }
 }
