@@ -124,6 +124,18 @@ impl Jpeg {
     pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)
     }
+
+    /// Get the position where new ICC and EXIF segments are inserted:
+    /// after the first 3 segments, but before the frame and scan headers
+    fn metadata_position(&self) -> usize {
+        self.segments
+            .iter()
+            .position(|segment| {
+                markers::is_sof(segment.marker()) || segment.marker() == markers::SOS
+            })
+            .unwrap_or(self.segments.len())
+            .min(3)
+    }
 }
 
 impl EncodeAt for Jpeg {
@@ -183,7 +195,7 @@ impl ImageICC for Jpeg {
         self.segments.retain(|segment| segment.icc().is_none());
 
         if let Some(profile) = profile {
-            let pos = self.segments.len().min(3);
+            let pos = self.metadata_position();
             let segments_n = (profile.len() / ICC_SEGMENT_MAX_SIZE + 1) as u8;
             for i in 0..segments_n {
                 let start = ICC_SEGMENT_MAX_SIZE * i as usize;
@@ -206,7 +218,7 @@ impl ImageEXIF for Jpeg {
 
         if let Some(exif) = exif {
             let segment = JpegSegment::new_exif(exif);
-            self.segments.insert(self.segments.len().min(3), segment);
+            self.segments.insert(self.metadata_position(), segment);
         }
     }
 }
@@ -227,6 +239,35 @@ mod tests {
         jpeg.set_exif(Some(exif.clone()));
         assert_eq!(jpeg.icc_profile(), Some(profile));
         assert_eq!(jpeg.exif(), Some(exif));
+    }
+
+    #[test]
+    fn set_metadata_before_frame_header() {
+        use markers::{APP0, APP1, APP2, DHT, DQT, SOF0, SOF2, SOS};
+
+        for (layout, expected) in [
+            (
+                &[APP0, SOF0, DQT, SOS][..],
+                &[APP0, APP2, APP1, SOF0, DQT, SOS][..],
+            ),
+            (
+                &[APP0, DQT, SOF2, DHT, SOS],
+                &[APP0, DQT, APP2, APP1, SOF2, DHT, SOS],
+            ),
+            // no frame header before the scan
+            (&[APP0, SOS], &[APP0, APP2, APP1, SOS]),
+        ] {
+            let segments = layout
+                .iter()
+                .map(|&marker| JpegSegment::new_with_contents(marker, Bytes::from_static(b"data")))
+                .collect();
+            let mut jpeg = Jpeg { segments };
+            jpeg.set_icc_profile(Some(Bytes::from_static(b"icc")));
+            jpeg.set_exif(Some(Bytes::from_static(b"exif")));
+
+            let result: Vec<u8> = jpeg.segments().iter().map(JpegSegment::marker).collect();
+            assert_eq!(result, expected);
+        }
     }
 
     #[test]

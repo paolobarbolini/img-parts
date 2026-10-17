@@ -94,3 +94,23 @@ pub(crate) fn has_length(marker: u8) -> bool {
 pub(crate) fn has_entropy(marker: u8) -> bool {
     matches!(marker, SOS)
 }
+
+pub(crate) fn is_sof(marker: u8) -> bool {
+    matches!(marker, SOF0..=SOF3 | SOF5..=SOF7 | SOF9..=SOF11 | SOF13..=SOF15)
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec::Vec;
+
+    use super::*;
+
+    #[test]
+    fn sof_markers() {
+        let sof: Vec<u8> = (0..=0xFF).filter(|&marker| is_sof(marker)).collect();
+        assert_eq!(
+            sof,
+            [SOF0, SOF1, SOF2, SOF3, SOF5, SOF6, SOF7, SOF9, SOF10, SOF11, SOF13, SOF14, SOF15]
+        );
+    }
+}
