@@ -21,7 +21,8 @@ impl<I: EncodeAt> Read for ImageEncoderReader<I> {
             return Ok(0);
         }
 
-        if self.buf.is_empty() {
+        // skip empty pieces, since returning 0 would signal the end of the stream
+        while self.buf.is_empty() {
             match self.inner.next() {
                 Some(next) => self.buf = next,
                 None => return Ok(0),
@@ -112,5 +113,21 @@ mod tests {
             assert_eq!(reader.read(&mut r).unwrap(), 0);
             assert_eq!(&r[..], &[0, 0, 0, 0]);
         }
+    }
+
+    #[test]
+    fn image_encoder_reader_empty_pieces() {
+        let encoder_at = FakeEncodeAt {
+            vec: vec![
+                Bytes::from_static(b"abcd"),
+                Bytes::new(),
+                Bytes::from_static(b"efgh"),
+            ],
+        };
+        let mut reader = ImageEncoder::from(encoder_at).read();
+
+        let mut out = Vec::new();
+        reader.read_to_end(&mut out).unwrap();
+        assert_eq!(out, b"abcdefgh");
     }
 }
