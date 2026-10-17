@@ -2,6 +2,7 @@ pub use self::{image::Jpeg, segment::JpegSegment};
 
 mod image;
 pub mod markers;
+mod mpf;
 mod segment;
 
 pub(crate) fn is_jpeg(buf: &[u8]) -> bool {

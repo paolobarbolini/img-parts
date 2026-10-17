@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use bytes::{Buf, Bytes, BytesMut};
 
-use super::{markers, JpegSegment};
+use super::{markers, mpf, JpegSegment};
 use crate::{
     encoder::{EncodeAt, ImageEncoder},
     util::read_checked,
@@ -131,6 +131,37 @@ impl Jpeg {
         ImageEncoder::from(self)
     }
 
+    /// Get the size of the segments before and after the MPF segment
+    fn mpf_split(&self) -> Option<(usize, usize)> {
+        let pos = self.segments.iter().position(JpegSegment::is_mpf)?;
+        let len = |segments: &[JpegSegment]| segments.iter().map(JpegSegment::len).sum::<usize>();
+        Some((len(&self.segments[..pos]), len(&self.segments[pos + 1..])))
+    }
+
+    /// Updates the MPF segment after the segments around it changed size,
+    /// given their `old` size from [`Jpeg::mpf_split`], so that the offsets
+    /// of the other images it lists stay valid
+    fn update_mpf(&mut self, old: Option<(usize, usize)>) {
+        let ((old_before, old_after), (before, after)) = match (old, self.mpf_split()) {
+            (Some(old), Some(new)) => (old, new),
+            _ => return,
+        };
+        // the other images move along with the segments after the MPF segment
+        let offset_delta = after as i64 - old_after as i64;
+        let size_delta = offset_delta + (before as i64 - old_before as i64);
+        if size_delta == 0 && offset_delta == 0 {
+            return;
+        }
+
+        if let Some(segment) = self.segments.iter_mut().find(|segment| segment.is_mpf()) {
+            if let Some(contents) =
+                mpf::update_entries(segment.contents(), size_delta, offset_delta)
+            {
+                *segment = JpegSegment::new_with_contents(markers::APP2, contents);
+            }
+        }
+    }
+
     /// Get the position of the frame header, or of the scan header if
     /// there's none, which metadata segments must be inserted before
     fn frame_header_position(&self) -> usize {
@@ -205,6 +236,7 @@ impl ImageICC for Jpeg {
     }
 
     fn set_icc_profile(&mut self, profile: Option<Bytes>) {
+        let mpf = self.mpf_split();
         self.segments.retain(|segment| segment.icc().is_none());
 
         // ICC profiles that don't fit into 255 segments can't be stored
@@ -221,6 +253,8 @@ impl ImageICC for Jpeg {
             });
             self.segments.splice(pos..pos, segments);
         }
+
+        self.update_mpf(mpf);
     }
 }
 
@@ -230,6 +264,7 @@ impl ImageEXIF for Jpeg {
     }
 
     fn set_exif(&mut self, exif: Option<Bytes>) {
+        let mpf = self.mpf_split();
         let old_pos = self
             .segments
             .iter()
@@ -252,6 +287,8 @@ impl ImageEXIF for Jpeg {
             let segment = JpegSegment::new_exif(exif);
             self.segments.insert(pos, segment);
         }
+
+        self.update_mpf(mpf);
     }
 }
 
@@ -378,6 +415,67 @@ mod tests {
             jpeg.set_exif(Some(Bytes::from_static(b"exif")));
             let exif_pos = jpeg.segments().iter().position(|s| s.exif().is_some());
             assert_eq!(exif_pos, Some(pos));
+        }
+    }
+
+    #[test]
+    fn update_mpf_offsets() {
+        // the first image, with an MPF segment pointing to a second one right after it
+        let segment = |marker: u8, contents: &[u8]| {
+            let mut segment = vec![0xFF, marker];
+            segment.extend_from_slice(&(contents.len() as u16 + 2).to_be_bytes());
+            segment.extend_from_slice(contents);
+            segment
+        };
+        let exif = segment(markers::APP1, b"Exif\0\0exif");
+        let tables = [segment(markers::DQT, &[0]), segment(markers::SOS, &[0])].concat();
+        let scan = b"scan\xFF\xD9";
+        let mpf = |size: u32, offset: u32| {
+            let mut contents = b"MPF\0II*\0\x08\0\0\0\x01\0\x02\xB0\x07\0".to_vec();
+            contents.extend_from_slice(b"\x20\0\0\0\x1A\0\0\0\0\0\0\0");
+            for (size, offset) in [(size, 0), (4, offset)] {
+                contents.extend_from_slice(&[0; 4]);
+                contents.extend_from_slice(&size.to_le_bytes());
+                contents.extend_from_slice(&offset.to_le_bytes());
+                contents.extend_from_slice(&[0; 4]);
+            }
+            segment(markers::APP2, &contents)
+        };
+        let first_len = 2 + exif.len() + mpf(0, 0).len() + tables.len() + scan.len();
+        let header = 2 + exif.len() + 8;
+        let mpf = mpf(first_len as u32, (first_len - header) as u32);
+        let file = [
+            &[0xFF, 0xD8],
+            &exif[..],
+            &mpf,
+            &tables,
+            scan,
+            &[0xFF, 0xD8, 0xFF, 0xD9],
+        ];
+        let jpeg = Jpeg::from_bytes(Bytes::from(file.concat())).unwrap();
+
+        let profile = Bytes::from(vec![0; 70000]);
+        let exif = Bytes::from_static(b"bigger exif");
+        let edits: [fn(&mut Jpeg, Bytes, Bytes); 4] = [
+            |jpeg, profile, _| jpeg.set_icc_profile(Some(profile)),
+            |jpeg, _, exif| jpeg.set_exif(Some(exif)),
+            |jpeg, _, _| jpeg.set_exif(None),
+            |jpeg, profile, _| {
+                jpeg.set_icc_profile(Some(profile));
+                jpeg.set_icc_profile(None);
+            },
+        ];
+        for edit in edits {
+            let mut jpeg = jpeg.clone();
+            edit(&mut jpeg, profile.clone(), exif.clone());
+            let file = jpeg.encoder().bytes();
+
+            let header = file.windows(4).position(|w| w == b"MPF\0").unwrap() + 4;
+            let read = |pos: usize| u32::from_le_bytes(file[pos..pos + 4].try_into().unwrap());
+            let (size, offset) = (read(header + 30) as usize, read(header + 50) as usize);
+            // the second image is still at the end of the file
+            assert_eq!(header + offset, file.len() - 4);
+            assert_eq!(size, header + offset);
         }
     }
 

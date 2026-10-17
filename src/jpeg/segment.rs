@@ -10,6 +10,7 @@ use crate::{
 };
 
 const ICC_DATA_PREFIX: &[u8] = b"ICC_PROFILE\0";
+const MPF_DATA_PREFIX: &[u8] = b"MPF\0";
 
 /// The representation of a segment making up a [`Jpeg`][super::Jpeg]
 #[derive(Clone, PartialEq, Eq)]
@@ -156,6 +157,11 @@ impl JpegSegment {
         } else {
             None
         }
+    }
+
+    /// Check if this `JpegSegment` is an MPF segment.
+    pub(super) fn is_mpf(&self) -> bool {
+        self.marker == markers::APP2 && self.contents.starts_with(MPF_DATA_PREFIX)
     }
 
     /// Create an [encoder][crate::ImageEncoder] for this `JpegSegment`
