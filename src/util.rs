@@ -34,7 +34,8 @@ where
     Ok(f(buf))
 }
 
-/// Convenience function to read a [u8; LEN] using [`read_checked`][self::read_checked]
+/// Convenience function to read a `[u8; LEN]`, failing with
+/// [`Error::Truncated`] if `buf` is too short
 pub fn read_u8_array<const LEN: usize>(buf: &mut Bytes) -> Result<[u8; LEN]> {
     let mut array = [0; LEN];
     buf.try_copy_to_slice(&mut array)

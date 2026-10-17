@@ -44,20 +44,21 @@ pub use read::ImageEncoderReader;
 /// let riff_chunk = RiffChunk::new(*b"RIFF", RiffContent::Data(Bytes::new()));
 ///
 /// let file = File::create("somefile.webp")?;
-/// riff_chunk.encoder().write_to(file);
+/// riff_chunk.encoder().write_to(file)?;
 /// # Ok(())
 /// # }
 /// ```
 ///
 /// This struct is created by the `encoder` method on
 ///
-/// * [`RiffChunk`][crate::riff::RiffContent::encoder]
+/// * [`RiffChunk`][crate::riff::RiffChunk::encoder]
 /// * [`RiffContent`][crate::riff::RiffContent::encoder]
 /// * [`WebP`][crate::webp::WebP::encoder]
 /// * [`Jpeg`][crate::jpeg::Jpeg::encoder]
 /// * [`JpegSegment`][crate::jpeg::JpegSegment::encoder]
 /// * [`Png`][crate::png::Png::encoder]
 /// * [`PngChunk`][crate::png::PngChunk::encoder]
+/// * [`DynImage`][crate::DynImage::encoder]
 ///
 /// See their documentation for more.
 #[derive(Clone)]

@@ -41,7 +41,7 @@ impl RiffChunk {
         RiffChunk { id, content }
     }
 
-    /// Create a new `RiffChunk` image from a Reader.
+    /// Create a `RiffChunk` from `Bytes`.
     ///
     /// Lists nested more than 32 levels deep aren't parsed,
     /// their content is kept as [`RiffContent::Data`].

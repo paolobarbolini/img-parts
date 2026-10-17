@@ -50,7 +50,7 @@ impl WebP {
         }
     }
 
-    /// Create a new `WebP` image from a Reader.
+    /// Create a `WebP` from `Bytes`.
     ///
     /// # Errors
     ///
@@ -136,9 +136,9 @@ impl WebP {
 
     /// Get the width and height of this `WebP`.
     ///
-    /// If this `WebP` has a `VP8X` chunk the dimension is the canvas size.
+    /// If this `WebP` has a `VP8X` chunk the dimensions are the canvas size.
     ///
-    /// Otherwise the dimension is read from the VP8 bitstream header.
+    /// Otherwise the dimensions are read from the VP8 or VP8L bitstream header.
     ///
     /// Returns `None` if the dimensions can't be read.
     pub fn dimensions(&self) -> Option<(u32, u32)> {
