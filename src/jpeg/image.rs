@@ -183,13 +183,14 @@ impl ImageICC for Jpeg {
         self.segments.retain(|segment| segment.icc().is_none());
 
         if let Some(profile) = profile {
+            let pos = self.segments.len().min(3);
             let segments_n = (profile.len() / ICC_SEGMENT_MAX_SIZE + 1) as u8;
             for i in 0..segments_n {
                 let start = ICC_SEGMENT_MAX_SIZE * i as usize;
                 let end = core::cmp::min(profile.len(), start + ICC_SEGMENT_MAX_SIZE);
 
                 let segment = JpegSegment::new_icc(i + 1, segments_n, profile.slice(start..end));
-                self.segments.insert(3, segment);
+                self.segments.insert(pos, segment);
             }
         }
     }
@@ -205,16 +206,28 @@ impl ImageEXIF for Jpeg {
 
         if let Some(exif) = exif {
             let segment = JpegSegment::new_exif(exif);
-            self.segments.insert(3, segment);
+            self.segments.insert(self.segments.len().min(3), segment);
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec;
+    use alloc::{vec, vec::Vec};
 
     use super::*;
+
+    #[test]
+    fn set_metadata_few_segments() {
+        let mut jpeg = Jpeg::from_bytes(Bytes::from_static(&[0xFF, 0xD8, 0xFF, 0xD9])).unwrap();
+        // big enough to be split into two segments
+        let profile = Bytes::from((0..70000).map(|i| i as u8).collect::<Vec<u8>>());
+        let exif = Bytes::from_static(b"exif");
+        jpeg.set_icc_profile(Some(profile.clone()));
+        jpeg.set_exif(Some(exif.clone()));
+        assert_eq!(jpeg.icc_profile(), Some(profile));
+        assert_eq!(jpeg.exif(), Some(exif));
+    }
 
     #[test]
     fn truncated_icc_segment() {

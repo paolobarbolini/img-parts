@@ -158,7 +158,9 @@ impl ImageICC for Png {
             contents.extend_from_slice(&compressed);
 
             let chunk = PngChunk::new(CHUNK_ICCP, contents.freeze());
-            self.chunks.insert(1, chunk);
+            // right after the IHDR chunk
+            let pos = self.chunks.len().min(1);
+            self.chunks.insert(pos, chunk);
         }
     }
 }
@@ -174,7 +176,9 @@ impl ImageEXIF for Png {
 
         if let Some(exif) = exif {
             let chunk = PngChunk::new(CHUNK_EXIF, exif);
-            self.chunks.insert(self.chunks.len() - 1, chunk);
+            // right before the IEND chunk
+            let pos = self.chunks.len().saturating_sub(1);
+            self.chunks.insert(pos, chunk);
         }
     }
 }
@@ -207,6 +211,21 @@ mod tests {
 
         png.set_icc_profile(Some(vec![0; ICC_PROFILE_MAX_SIZE + 1].into()));
         assert!(png.icc_profile().is_none());
+    }
+
+    #[test]
+    fn set_metadata_without_chunks() {
+        let png = Png::from_bytes(Bytes::from_static(SIGNATURE)).unwrap();
+
+        let mut with_icc = png.clone();
+        let profile = Bytes::from_static(b"profile");
+        with_icc.set_icc_profile(Some(profile.clone()));
+        assert_eq!(with_icc.icc_profile(), Some(profile));
+
+        let mut with_exif = png;
+        let exif = Bytes::from_static(b"exif");
+        with_exif.set_exif(Some(exif.clone()));
+        assert_eq!(with_exif.exif(), Some(exif));
     }
 
     #[test]
