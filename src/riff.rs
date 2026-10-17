@@ -12,6 +12,10 @@ use crate::{
 // the 4 bytes signature
 const SIGNATURE: &[u8] = b"RIFF";
 
+// lists nested deeper than this are kept as data instead of being
+// parsed, so that deeply nested lists can't overflow the stack
+const MAX_LIST_DEPTH: usize = 32;
+
 /// The representation of a RIFF chunk
 #[derive(Clone, PartialEq)]
 pub struct RiffChunk {
@@ -39,22 +43,29 @@ impl RiffChunk {
 
     /// Create a new `RiffChunk` image from a Reader.
     ///
+    /// Lists nested more than 32 levels deep aren't parsed,
+    /// their content is kept as [`RiffContent::Data`].
+    ///
     /// # Errors
     ///
     /// This method fails if the file signature doesn't match or one
     /// of the chunks is corrupted or truncated.
     #[inline]
     pub fn from_bytes(mut b: Bytes) -> Result<RiffChunk> {
-        RiffChunk::from_bytes_impl(&mut b, true)
+        RiffChunk::from_bytes_impl(&mut b, true, 0)
     }
 
-    pub(crate) fn from_bytes_impl(b: &mut Bytes, check_riff_id: bool) -> Result<RiffChunk> {
+    pub(crate) fn from_bytes_impl(
+        b: &mut Bytes,
+        check_riff_id: bool,
+        depth: usize,
+    ) -> Result<RiffChunk> {
         let id: [u8; SIGNATURE.len()] = read_u8_array(b)?;
         if check_riff_id && id != SIGNATURE {
             return Err(Error::WrongSignature);
         }
 
-        let content = RiffContent::from_bytes(b, id)?;
+        let content = RiffContent::from_bytes(b, id, depth)?;
         Ok(RiffChunk::new(id, content))
     }
 
@@ -123,11 +134,11 @@ impl EncodeAt for RiffChunk {
 
 #[allow(clippy::len_without_is_empty)]
 impl RiffContent {
-    fn from_bytes(b: &mut Bytes, id: [u8; 4]) -> Result<RiffContent> {
+    fn from_bytes(b: &mut Bytes, id: [u8; 4], depth: usize) -> Result<RiffContent> {
         let len = read_checked(b, |b| b.get_u32_le())?;
         let mut content = split_to_checked(b, len as usize)?;
 
-        if has_subchunks(id) {
+        if has_subchunks(id) && depth < MAX_LIST_DEPTH {
             let kind = if has_kind(id) {
                 Some(read_u8_array(&mut content)?)
             } else {
@@ -136,7 +147,7 @@ impl RiffContent {
 
             let mut subchunks = Vec::with_capacity(8);
             while !content.is_empty() {
-                let subchunk = RiffChunk::from_bytes_impl(&mut content, false)?;
+                let subchunk = RiffChunk::from_bytes_impl(&mut content, false, depth + 1)?;
                 subchunks.push(subchunk);
             }
 
@@ -250,4 +261,39 @@ fn has_subchunks(id: [u8; 4]) -> bool {
 
 fn has_kind(id: [u8; 4]) -> bool {
     matches!(&id, b"RIFF" | b"LIST")
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec::Vec;
+
+    use super::*;
+
+    #[test]
+    fn deeply_nested_lists() {
+        // "seqt" lists nested 100000 levels deep
+        let depth = 100_000;
+        let mut buf = Vec::with_capacity(12 + 8 * depth);
+        buf.extend_from_slice(b"RIFF");
+        buf.extend_from_slice(&(4 + 8 * depth as u32).to_le_bytes());
+        buf.extend_from_slice(b"WEBP");
+        for i in (0..depth).rev() {
+            buf.extend_from_slice(b"seqt");
+            buf.extend_from_slice(&(8 * i as u32).to_le_bytes());
+        }
+        let buf = Bytes::from(buf);
+
+        let riff = RiffChunk::from_bytes(buf.clone()).unwrap();
+
+        let mut chunk = &riff;
+        let mut lists = 0;
+        while let Some((_, subchunks)) = chunk.content().list() {
+            chunk = &subchunks[0];
+            lists += 1;
+        }
+        assert_eq!(lists, MAX_LIST_DEPTH);
+        assert!(chunk.content().data().is_some());
+
+        assert_eq!(riff.encoder().bytes(), buf);
+    }
 }
