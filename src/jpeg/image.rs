@@ -547,6 +547,13 @@ mod tests {
     }
 
     #[test]
+    fn encode_entropy_without_contents() {
+        let file = Bytes::from_static(&[0xFF, 0xD8, 0xFF, 0xDA, 0x00, 0x02, 4, 5, 6, 0xFF, 0xD9]);
+        let jpeg = Jpeg::from_bytes(file.clone()).unwrap();
+        assert_eq!(jpeg.encoder().bytes(), file);
+    }
+
+    #[test]
     fn truncated_icc_segment() {
         for contents in [&b"ICC_PROFILE\0"[..], b"ICC_PROFILE\0\x01"] {
             let segment =

@@ -185,7 +185,10 @@ impl EncodeAt for JpegSegment {
                 Some(vec.freeze())
             }
             1 if !self.contents.is_empty() => Some(self.contents.clone()),
-            2 if !self.entropy.is_empty() => Some(self.entropy.clone()),
+            1 if !self.entropy.is_empty() => Some(self.entropy.clone()),
+            2 if !self.contents.is_empty() && !self.entropy.is_empty() => {
+                Some(self.entropy.clone())
+            }
             _ => {
                 let decrement =
                     1 + !self.contents.is_empty() as usize + !self.entropy.is_empty() as usize;
