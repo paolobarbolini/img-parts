@@ -42,7 +42,7 @@ jobs:
 
       - name: cargo clippy
         run: |
-          cargo clippy --all --examples
+          cargo clippy --locked --all --examples
 
   test:
     name: test / ${{ matrix.name }}
@@ -81,4 +81,4 @@ jobs:
 
       - name: Test
         run: |
-          cargo test ${{ matrix.args }}
+          cargo test --locked ${{ matrix.args }}
