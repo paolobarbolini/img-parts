@@ -21,6 +21,7 @@ const ICC_PROFILE_MAX_SIZE: usize = 16 * 1024 * 1024;
 pub const CHUNK_ICCP: [u8; 4] = *b"iCCP";
 pub const CHUNK_EXIF: [u8; 4] = *b"eXIf";
 pub const CHUNK_IEND: [u8; 4] = *b"IEND";
+const CHUNK_SRGB: [u8; 4] = *b"sRGB";
 
 /// The representation of a Png image
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -148,6 +149,9 @@ impl ImageICC for Png {
         self.remove_chunks_by_type(CHUNK_ICCP);
 
         if let Some(profile) = profile {
+            // the sRGB chunk would conflict with the new profile
+            self.remove_chunks_by_type(CHUNK_SRGB);
+
             let mut contents = BytesMut::with_capacity(profile.len());
             // profile name written as a C string
             contents.extend_from_slice(b"icc\0");
@@ -226,6 +230,25 @@ mod tests {
         let exif = Bytes::from_static(b"exif");
         with_exif.set_exif(Some(exif.clone()));
         assert_eq!(with_exif.exif(), Some(exif));
+    }
+
+    #[test]
+    fn set_icc_profile_removes_srgb() {
+        let png = Png {
+            chunks: vec![
+                PngChunk::new(*b"IHDR", Bytes::new()),
+                PngChunk::new(CHUNK_SRGB, Bytes::from_static(&[0])),
+                PngChunk::new(CHUNK_IEND, Bytes::new()),
+            ],
+        };
+
+        let mut without_icc = png.clone();
+        without_icc.set_icc_profile(None);
+        assert!(without_icc.chunk_by_type(CHUNK_SRGB).is_some());
+
+        let mut with_icc = png;
+        with_icc.set_icc_profile(Some(Bytes::from_static(b"profile")));
+        assert!(with_icc.chunk_by_type(CHUNK_SRGB).is_none());
     }
 
     #[test]
