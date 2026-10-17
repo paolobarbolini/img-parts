@@ -134,7 +134,7 @@ impl RiffContent {
                 None
             };
 
-            let mut subchunks = Vec::with_capacity(8);
+            let mut subchunks = Vec::new();
             while !content.is_empty() {
                 let subchunk = RiffChunk::from_bytes_impl(&mut content, false, depth + 1)?;
                 subchunks.push(subchunk);
