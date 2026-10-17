@@ -209,3 +209,26 @@ impl ImageEXIF for Jpeg {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec;
+
+    use super::*;
+
+    #[test]
+    fn truncated_icc_segment() {
+        for contents in [&b"ICC_PROFILE\0"[..], b"ICC_PROFILE\0\x01"] {
+            let segment =
+                JpegSegment::new_with_contents(markers::APP2, Bytes::from_static(contents));
+            let mut jpeg = Jpeg {
+                segments: vec![segment],
+            };
+            assert_eq!(jpeg.icc_profile(), None);
+
+            // too short to be an ICC segment, so it isn't removed
+            jpeg.set_icc_profile(None);
+            assert_eq!(jpeg.segments().len(), 1);
+        }
+    }
+}

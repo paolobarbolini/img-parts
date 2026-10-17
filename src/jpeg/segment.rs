@@ -142,9 +142,9 @@ impl JpegSegment {
         let mut b = self.contents.slice(ICC_DATA_PREFIX.len()..);
 
         // sequence number (between 1 and N. of sequence numbers inclusive)
-        let seqno = b.get_u8();
+        let seqno = b.try_get_u8().ok()?;
         // number of sequences
-        let num = b.get_u8();
+        let num = b.try_get_u8().ok()?;
 
         Some((seqno, num, b))
     }
