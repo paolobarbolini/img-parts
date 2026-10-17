@@ -95,12 +95,6 @@ impl WebP {
         } else if correct_kind == VP8Kind::VP8X {
             // TODO VP8L
 
-            let pos = self
-                .chunks()
-                .iter()
-                .position(|chunk| chunk.id() == CHUNK_ICCP)
-                .unwrap_or(0);
-
             // the VP8X chunk can't be created without knowing the canvas size
             let (width, height) = match self.dimensions() {
                 Some(dimensions) => dimensions,
@@ -117,8 +111,9 @@ impl WebP {
             let buf = u24_to_le_bytes(height - 1);
             content.extend_from_slice(&buf);
 
+            // the VP8X chunk must be the first chunk
             let chunk = RiffChunk::new(CHUNK_VP8X, RiffContent::Data(content.freeze()));
-            self.chunks_mut().insert(pos, chunk);
+            self.chunks_mut().insert(0, chunk);
         }
     }
 
@@ -235,19 +230,13 @@ impl ImageICC for WebP {
         self.remove_chunks_by_id(CHUNK_ICCP);
 
         if let Some(profile) = profile {
-            let kind = self.infer_kind();
-            let pos = match kind {
-                VP8Kind::VP8 => self
-                    .chunks()
-                    .iter()
-                    .position(|chunk| chunk.id() == CHUNK_VP8),
-                VP8Kind::VP8L | VP8Kind::VP8X => self
-                    .chunks()
-                    .iter()
-                    .position(|chunk| chunk.id() == CHUNK_VP8L || chunk.id() == CHUNK_VP8X)
-                    .map(|pos| pos + 1),
-            }
-            .unwrap_or(0);
+            // the ICCP chunk goes right after the VP8X chunk,
+            // which gets added in front of it if it's missing
+            let pos = self
+                .chunks()
+                .iter()
+                .position(|chunk| chunk.id() == CHUNK_VP8X)
+                .map_or(0, |pos| pos + 1);
 
             let chunk = RiffChunk::new(CHUNK_ICCP, RiffContent::Data(profile));
             self.chunks_mut().insert(pos, chunk);
@@ -290,12 +279,18 @@ impl ImageEXIF for WebP {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+
     use super::*;
 
-    fn from_chunks(chunks: &[([u8; 4], &'static [u8])]) -> WebP {
+    fn ids(webp: &WebP) -> Vec<[u8; 4]> {
+        webp.chunks().iter().map(RiffChunk::id).collect()
+    }
+
+    fn from_chunks(chunks: &[([u8; 4], &[u8])]) -> WebP {
         let subchunks = chunks
             .iter()
-            .map(|&(id, data)| RiffChunk::new(id, RiffContent::Data(Bytes::from_static(data))))
+            .map(|&(id, data)| RiffChunk::new(id, RiffContent::Data(Bytes::copy_from_slice(data))))
             .collect();
         let riff = RiffChunk::new(
             *b"RIFF",
@@ -350,5 +345,46 @@ mod tests {
             assert!(webp.has_chunk(CHUNK_ICCP) && webp.has_chunk(CHUNK_EXIF));
             assert!(!webp.has_chunk(CHUNK_VP8X));
         }
+    }
+
+    #[test]
+    fn create_vp8x_first() {
+        let vp8 = b"\x50\x5a\x00\x9d\x01\x2a\x01\x00\x01\x00";
+        let mut webp = from_chunks(&[(CHUNK_VP8, vp8), (CHUNK_ICCP, b"icc")]);
+        webp.set_exif(Some(Bytes::from_static(b"exif")));
+        assert_eq!(ids(&webp), [CHUNK_VP8X, CHUNK_VP8, CHUNK_ICCP, CHUNK_EXIF]);
+    }
+
+    #[test]
+    fn set_icc_profile_position() {
+        let icc = Bytes::from_static(b"icc");
+        let vp8 = b"\x50\x5a\x00\x9d\x01\x2a\x01\x00\x01\x00";
+
+        let mut webp = from_chunks(&[(CHUNK_VP8, vp8)]);
+        webp.set_icc_profile(Some(icc.clone()));
+        assert_eq!(ids(&webp), [CHUNK_VP8X, CHUNK_ICCP, CHUNK_VP8]);
+
+        let lossless = [0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let mut webp = from_chunks(&[
+            (CHUNK_VP8X, &lossless),
+            (CHUNK_ICCP, b"old"),
+            (CHUNK_VP8L, b"\x2f\x00\x00\x00\x00"),
+        ]);
+        webp.set_icc_profile(Some(icc.clone()));
+        assert_eq!(ids(&webp), [CHUNK_VP8X, CHUNK_ICCP, CHUNK_VP8L]);
+
+        let alpha = [0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let mut webp = from_chunks(&[(CHUNK_VP8X, &alpha), (CHUNK_ALPH, b""), (CHUNK_VP8, vp8)]);
+        webp.set_icc_profile(Some(icc.clone()));
+        assert_eq!(ids(&webp), [CHUNK_VP8X, CHUNK_ICCP, CHUNK_ALPH, CHUNK_VP8]);
+
+        let animation = [0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let mut webp = from_chunks(&[
+            (CHUNK_VP8X, &animation),
+            (CHUNK_ANIM, b""),
+            (CHUNK_ANMF, b""),
+        ]);
+        webp.set_icc_profile(Some(icc));
+        assert_eq!(ids(&webp), [CHUNK_VP8X, CHUNK_ICCP, CHUNK_ANIM, CHUNK_ANMF]);
     }
 }
