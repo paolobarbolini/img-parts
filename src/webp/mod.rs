@@ -132,7 +132,8 @@ impl WebP {
     pub fn dimensions(&self) -> Option<(u32, u32)> {
         if let Some(vp8x) = self.chunk_by_id(CHUNK_VP8X) {
             if let Some(data) = vp8x.content().data() {
-                if let Some(range) = data.get(2..8) {
+                // the canvas size comes after 1 byte of flags and 3 reserved bytes
+                if let Some(range) = data.get(4..10) {
                     let width = u24_from_le_bytes(range[0..3].try_into().unwrap()) + 1;
                     let height = u24_from_le_bytes(range[3..6].try_into().unwrap()) + 1;
                     return Some((width, height));
@@ -309,6 +310,15 @@ mod tests {
     #[test]
     fn vp8_dimensions() {
         let webp = from_chunks(&[(CHUNK_VP8, b"\x50\x5a\x00\x9d\x01\x2a\xcd\x02\x00\x02")]);
+        assert_eq!(webp.dimensions(), Some((717, 512)));
+    }
+
+    #[test]
+    fn vp8x_dimensions() {
+        let webp = from_chunks(&[
+            (CHUNK_VP8X, b"\x20\x00\x00\x00\xcc\x02\x00\xff\x01\x00"),
+            (CHUNK_VP8, b"\x50\x5a\x00\x9d\x01\x2a\x01\x00\x01\x00"),
+        ]);
         assert_eq!(webp.dimensions(), Some((717, 512)));
     }
 
