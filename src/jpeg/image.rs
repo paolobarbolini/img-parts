@@ -61,9 +61,9 @@ impl Jpeg {
                 break;
             }
 
+            // markers without a length carry no data,
+            // so they're skipped just like fill bytes
             if !markers::has_length(marker) {
-                let segment = JpegSegment::new(marker);
-                segments.push(segment);
                 continue;
             }
 
@@ -391,6 +391,18 @@ mod tests {
         let dnl = jpeg.segment_by_marker(markers::DNL).unwrap();
         assert_eq!(dnl.contents(), &Bytes::from_static(&[0x00, 0x10]));
         assert!(jpeg.segment_by_marker(markers::DQT).is_some());
+    }
+
+    #[test]
+    fn skip_markers_without_length() {
+        // TEM, RST0 and a repeated SOI before a DQT segment
+        let file = Bytes::from_static(&[
+            0xFF, 0xD8, 0xFF, 0x01, 0xFF, 0xD0, 0xFF, 0xD8, 0xFF, 0xDB, 0x00, 0x03, 0x00, 0xFF,
+            0xD9,
+        ]);
+        let jpeg = Jpeg::from_bytes(file).unwrap();
+        let markers: Vec<u8> = jpeg.segments().iter().map(JpegSegment::marker).collect();
+        assert_eq!(markers, [markers::DQT]);
     }
 
     #[test]
