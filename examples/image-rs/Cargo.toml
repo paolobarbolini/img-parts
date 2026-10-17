@@ -9,7 +9,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
-# importing the image crate with only jpeg and webp suuport, since this example
+# importing the image crate with only jpeg, png and webp support, since this example
 # focuses on formats supported by img-parts. This also makes the builds faster.
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 img-parts = { path = "../../" }

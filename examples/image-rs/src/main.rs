@@ -22,7 +22,9 @@ fn main() {
     let output_path = match args.next() {
         Some(path) => path,
         None => {
-            eprintln!("Please specify the output file path (must have a .jpg or a .png extension)");
+            eprintln!(
+                "Please specify the output file path (must have a .jpg, .png or .webp extension)"
+            );
             exit(1);
         }
     };
