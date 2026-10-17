@@ -14,15 +14,15 @@ use crate::{
 
 mod flags;
 
-pub const CHUNK_ALPH: [u8; 4] = [b'A', b'L', b'P', b'H'];
-pub const CHUNK_ANIM: [u8; 4] = [b'A', b'N', b'I', b'M'];
-pub const CHUNK_ANMF: [u8; 4] = [b'A', b'N', b'M', b'F'];
-pub const CHUNK_EXIF: [u8; 4] = [b'E', b'X', b'I', b'F'];
-pub const CHUNK_ICCP: [u8; 4] = [b'I', b'C', b'C', b'P'];
-pub const CHUNK_VP8: [u8; 4] = [b'V', b'P', b'8', b' '];
-pub const CHUNK_VP8L: [u8; 4] = [b'V', b'P', b'8', b'L'];
-pub const CHUNK_VP8X: [u8; 4] = [b'V', b'P', b'8', b'X'];
-pub const CHUNK_XMP: [u8; 4] = [b'X', b'M', b'P', b' '];
+pub const CHUNK_ALPH: [u8; 4] = *b"ALPH";
+pub const CHUNK_ANIM: [u8; 4] = *b"ANIM";
+pub const CHUNK_ANMF: [u8; 4] = *b"ANMF";
+pub const CHUNK_EXIF: [u8; 4] = *b"EXIF";
+pub const CHUNK_ICCP: [u8; 4] = *b"ICCP";
+pub const CHUNK_VP8: [u8; 4] = *b"VP8 ";
+pub const CHUNK_VP8L: [u8; 4] = *b"VP8L";
+pub const CHUNK_VP8X: [u8; 4] = *b"VP8X";
+pub const CHUNK_XMP: [u8; 4] = *b"XMP ";
 
 pub(crate) fn is_webp(buf: &[u8]) -> bool {
     buf.len() > 12 && &buf[..4] == b"RIFF" && &buf[8..12] == b"WEBP"

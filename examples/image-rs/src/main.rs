@@ -61,7 +61,7 @@ fn load(path: &Path) -> (image::DynamicImage, Option<Bytes>, Option<Bytes>) {
 /// If `iccp` *and* `exif` are None, the image is written directly to `path`, else
 /// it is buffered in memory, modified by img-parts and then written to `path`.
 fn save(img: image::DynamicImage, path: &Path, iccp: Option<Bytes>, exif: Option<Bytes>) {
-    let out_format = image::ImageFormat::from_path(&path).expect("detected output format");
+    let out_format = image::ImageFormat::from_path(path).expect("detected output format");
     let mut out_file = File::create(path).expect("create output file");
 
     if iccp.is_some() || exif.is_some() {

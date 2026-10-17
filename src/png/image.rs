@@ -13,9 +13,9 @@ use crate::{
 // the 8 byte signature
 pub(crate) const SIGNATURE: &[u8] = &[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
-pub const CHUNK_ICCP: [u8; 4] = [b'i', b'C', b'C', b'P'];
-pub const CHUNK_EXIF: [u8; 4] = [b'e', b'X', b'I', b'f'];
-pub const CHUNK_IEND: [u8; 4] = [b'I', b'E', b'N', b'D'];
+pub const CHUNK_ICCP: [u8; 4] = *b"iCCP";
+pub const CHUNK_EXIF: [u8; 4] = *b"eXIf";
+pub const CHUNK_IEND: [u8; 4] = *b"IEND";
 
 /// The representation of a Png image
 #[derive(Debug, Clone, PartialEq, Eq)]

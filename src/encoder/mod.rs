@@ -39,7 +39,7 @@ pub use read::ImageEncoderReader;
 /// # fn run() -> Result<()> {
 /// // some RiffChunk just for this example
 /// // this would also work with anything else from this crate that implements `encoder`
-/// let riff_chunk = RiffChunk::new([b'R', b'I', b'F', b'F'], RiffContent::Data(Bytes::new()));
+/// let riff_chunk = RiffChunk::new(*b"RIFF", RiffContent::Data(Bytes::new()));
 ///
 /// let file = File::create("somefile.webp")?;
 /// riff_chunk.encoder().write_to(file);
