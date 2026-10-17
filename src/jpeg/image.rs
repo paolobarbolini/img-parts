@@ -15,6 +15,9 @@ pub const ICC_PREFIX_SIZE: usize = 2 + 14;
 // max chunk size: u16::max_value() - ICC_PREFIX_SIZE
 const ICC_SEGMENT_MAX_SIZE: usize = 65535 - ICC_PREFIX_SIZE;
 
+// max ICC profile size: u8::max_value() chunks
+const ICC_MAX_SIZE: usize = 255 * ICC_SEGMENT_MAX_SIZE;
+
 // max EXIF size: u16::max_value() - segment size (2 byte) - EXIF prefix
 const EXIF_MAX_SIZE: usize = 65535 - 2 - EXIF_DATA_PREFIX.len();
 
@@ -196,10 +199,12 @@ impl ImageICC for Jpeg {
     fn set_icc_profile(&mut self, profile: Option<Bytes>) {
         self.segments.retain(|segment| segment.icc().is_none());
 
-        if let Some(profile) = profile {
+        // ICC profiles that don't fit into 255 segments can't be stored
+        if let Some(profile) = profile.filter(|profile| profile.len() <= ICC_MAX_SIZE) {
             // after the first 3 segments, but before the frame header
             let pos = self.frame_header_position().min(3);
-            let segments_n = (profile.len() / ICC_SEGMENT_MAX_SIZE + 1) as u8;
+            // at least 1, even for an empty profile
+            let segments_n = (profile.len().saturating_sub(1) / ICC_SEGMENT_MAX_SIZE + 1) as u8;
             let segments = (0..segments_n).map(|i| {
                 let start = ICC_SEGMENT_MAX_SIZE * i as usize;
                 let end = core::cmp::min(profile.len(), start + ICC_SEGMENT_MAX_SIZE);
@@ -272,6 +277,26 @@ mod tests {
             .map(|(seqno, num, _)| (seqno, num))
             .collect();
         assert_eq!(order, [(1, 3), (2, 3), (3, 3)]);
+    }
+
+    #[test]
+    fn set_icc_profile_size_limit() {
+        let mut jpeg = Jpeg::from_bytes(Bytes::from_static(&[0xFF, 0xD8, 0xFF, 0xD9])).unwrap();
+
+        jpeg.set_icc_profile(Some(vec![0; ICC_SEGMENT_MAX_SIZE].into()));
+        assert_eq!(jpeg.segments().len(), 1);
+
+        jpeg.set_icc_profile(Some(vec![0; ICC_MAX_SIZE].into()));
+        assert_eq!(jpeg.segments().len(), 255);
+        assert_eq!(
+            jpeg.icc_profile().map(|profile| profile.len()),
+            Some(ICC_MAX_SIZE)
+        );
+
+        for len in [ICC_MAX_SIZE + 1, 2 * ICC_MAX_SIZE] {
+            jpeg.set_icc_profile(Some(vec![0; len].into()));
+            assert!(jpeg.icc_profile().is_none());
+        }
     }
 
     #[test]

@@ -12,6 +12,9 @@ pub trait ImageICC {
     ///
     /// Removes any pre-existing ICC Profile from this image.
     /// Adds a new ICC Profile if `profile` is `Some`.
+    ///
+    /// JPEG images can't store ICC profiles bigger than 16707345 bytes,
+    /// so bigger ones are discarded when set on them.
     fn set_icc_profile(&mut self, profile: Option<Bytes>);
 }
 
