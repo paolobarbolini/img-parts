@@ -1,3 +1,32 @@
+## [0.4.1]
+
+* Fix panics with malformed images in `WebP::dimensions`, `Png::icc_profile`, `Jpeg::icc_profile` and the `set_icc_profile` and `set_exif` methods
+* Fix stack overflow when parsing deeply nested RIFF lists
+* Limit the decompressed size of PNG ICC profiles to 16 MiB
+* Fix `WebP::dimensions` returning wrong values for images with a VP8X chunk
+* Fix WebP images with alpha, animation, XMP metadata or unknown chunks, or lossless with an ICC profile, becoming invalid when changing their ICC profile or EXIF metadata
+* Fix WebP VP8X flags not matching the chunks after changing the ICC profile or EXIF metadata, making readers ignore the metadata or reject the image
+* Insert PNG eXIf chunks before the image data
+* Remove the PNG sRGB chunk when setting an ICC profile
+* Insert JPEG ICC profile and EXIF segments before the frame header
+* Replace JPEG EXIF segments in place, and insert new ones right after the SOI marker and any APP0 segments, like the JFIF one, so that readers find them
+* Write multi-segment JPEG ICC profiles in sequence order
+* Discard JPEG EXIF metadata and ICC profiles too big to be stored, instead of panicking or writing a corrupted profile
+* Ignore JPEG ICC profiles with missing, duplicated or inconsistent segments
+* Keep the offsets in the MPF segment of JPEG images valid when changing their ICC profile or EXIF metadata, so that their other pictures stay readable
+* Keep the EOI marker of JPEG images without an SOS segment
+* Fix encoding of JPEG markers without a length, and parsing of RSTn, DNL, DHP, EXP and JPGn markers
+* Skip JPEG markers without a length when parsing, instead of keeping each of them as a segment
+* Fix `ImageEncoderReader` stopping early at empty chunks, truncating every PNG image
+* Fix encoding of JPEG segments with entropy coded data but no contents
+* Encode images in linear time, instead of quadratic in the number of chunks
+* Reduce the memory needed to parse RIFF lists
+* Bump miniz_oxide crate to 0.9
+* Bump minimum bytes crate version to 1.10
+* Bump minimum crc32fast crate version to 1.2.1
+
+[0.4.1]: https://github.com/paolobarbolini/img-parts/compare/v0.4.0...v0.4.1
+
 ## [0.4.0]
 
 * Stop prepending JPEG preamble to WebP EXIF chunks and support decoding chunks with no preamble
