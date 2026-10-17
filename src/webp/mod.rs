@@ -500,4 +500,19 @@ mod tests {
         webp.set_icc_profile(Some(Bytes::from_static(b"icc")));
         assert_eq!(vp8x(&webp), RiffContent::Data(Bytes::new()));
     }
+
+    #[test]
+    fn create_vp8x_for_lossless_alpha() {
+        for (vp8l, flags) in [
+            (b"\x2f\x00\x00\x00\x10", 0x18),
+            (b"\x2f\x00\x00\x00\x00", 0x08),
+        ] {
+            let mut webp = from_chunks(&[(CHUNK_VP8L, vp8l)]);
+            webp.set_exif(Some(Bytes::from_static(b"exif")));
+
+            let vp8x = [flags, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            let expected = RiffContent::Data(Bytes::copy_from_slice(&vp8x));
+            assert_eq!(webp.chunk_by_id(CHUNK_VP8X).unwrap().content(), &expected);
+        }
+    }
 }

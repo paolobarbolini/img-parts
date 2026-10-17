@@ -1,4 +1,6 @@
-use super::{WebP, CHUNK_ALPH, CHUNK_ANIM, CHUNK_ANMF, CHUNK_EXIF, CHUNK_ICCP, CHUNK_XMP};
+use super::{
+    WebP, CHUNK_ALPH, CHUNK_ANIM, CHUNK_ANMF, CHUNK_EXIF, CHUNK_ICCP, CHUNK_VP8L, CHUNK_XMP,
+};
 
 const ICC: u8 = 0b0010_0000;
 const ALPHA: u8 = 0b0001_0000;
@@ -15,7 +17,11 @@ impl WebPFlags {
         if webp.has_chunk(CHUNK_ICCP) {
             flags.0[0] |= ICC;
         }
-        if webp.has_chunk(CHUNK_ALPH) {
+        let lossless_alpha = webp
+            .chunk_by_id(CHUNK_VP8L)
+            .and_then(|chunk| chunk.content().data())
+            .map_or(false, |data| vp8l_has_alpha(data));
+        if webp.has_chunk(CHUNK_ALPH) || lossless_alpha {
             flags.0[0] |= ALPHA;
         }
         if webp.has_chunk(CHUNK_EXIF) {
@@ -35,4 +41,10 @@ impl WebPFlags {
     pub(super) fn merge(self, flags: u8) -> u8 {
         (flags & !(ICC | EXIF)) | (self.0[0] & (ICC | EXIF))
     }
+}
+
+/// Checks the alpha_is_used bit of a VP8L bitstream header, which comes
+/// after the 1 byte signature and the 14 bit width and height
+fn vp8l_has_alpha(data: &[u8]) -> bool {
+    matches!(data.get(..5), Some(&[0x2f, _, _, _, last]) if last & 0x10 != 0)
 }
