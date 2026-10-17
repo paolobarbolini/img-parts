@@ -171,20 +171,28 @@ impl EncodeAt for Jpeg {
 
 impl ImageICC for Jpeg {
     fn icc_profile(&self) -> Option<Bytes> {
-        let mut icc_parts = self.segments.iter().filter_map(|segment| segment.icc());
-
-        let first = icc_parts.next()?;
-        let second = match icc_parts.next() {
-            Some(second) => second,
-            None => return Some(first.2),
-        };
-
-        let mut icc_parts: Vec<(u8, u8, Bytes)> = icc_parts.collect();
-        icc_parts.push(first);
-        icc_parts.push(second);
+        let mut icc_parts: Vec<(u8, u8, Bytes)> = self
+            .segments
+            .iter()
+            .filter_map(|segment| segment.icc())
+            .collect();
 
         // sort by seqno
         icc_parts.sort_by_key(|&(seqno, _, _)| seqno);
+
+        // like libjpeg, ignore profiles with missing, duplicated or inconsistent segments
+        let count = icc_parts.len();
+        let valid = icc_parts
+            .iter()
+            .enumerate()
+            .all(|(i, &(seqno, num, _))| usize::from(seqno) == i + 1 && usize::from(num) == count);
+        if count == 0 || !valid {
+            return None;
+        }
+
+        if count == 1 {
+            return icc_parts.pop().map(|(_, _, part)| part);
+        }
 
         let len = icc_parts.iter().map(|part| part.2.len()).sum::<usize>();
         let mut sequence = BytesMut::with_capacity(len);
@@ -277,6 +285,24 @@ mod tests {
             .map(|(seqno, num, _)| (seqno, num))
             .collect();
         assert_eq!(order, [(1, 3), (2, 3), (3, 3)]);
+    }
+
+    #[test]
+    fn invalid_icc_segments() {
+        let icc = |seqno, num| JpegSegment::new_icc(seqno, num, Bytes::from_static(b"icc"));
+        for segments in [
+            // invalid sequence number
+            vec![icc(0, 1)],
+            // missing segment
+            vec![icc(1, 2)],
+            // duplicated segment
+            vec![icc(1, 1), icc(1, 1)],
+            // inconsistent number of segments
+            vec![icc(1, 2), icc(2, 3)],
+        ] {
+            let jpeg = Jpeg { segments };
+            assert_eq!(jpeg.icc_profile(), None);
+        }
     }
 
     #[test]
