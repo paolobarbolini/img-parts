@@ -94,7 +94,18 @@ impl WebP {
 
         if current_kind == correct_kind {
             if correct_kind == VP8Kind::VP8X {
-                // TODO: update flags in the VP8X chunk
+                let flags = WebPFlags::from_webp(self);
+                let vp8x = self
+                    .chunks_mut()
+                    .iter_mut()
+                    .find(|chunk| chunk.id() == CHUNK_VP8X);
+                if let Some(RiffContent::Data(data)) = vp8x.map(RiffChunk::content_mut) {
+                    if !data.is_empty() {
+                        let mut content = BytesMut::from(&data[..]);
+                        content[0] = flags.merge(content[0]);
+                        *data = content.freeze();
+                    }
+                }
             }
         } else if correct_kind == VP8Kind::VP8 {
             self.remove_chunks_by_id(CHUNK_VP8X);
@@ -437,5 +448,56 @@ mod tests {
         let mut webp = from_chunks(&[(CHUNK_VP8X, &vp8x), (CHUNK_ICCP, b""), (CHUNK_VP8, vp8)]);
         webp.set_icc_profile(None);
         assert_eq!(ids(&webp), [CHUNK_VP8]);
+    }
+
+    #[test]
+    fn update_vp8x_flags() {
+        let vp8 = b"\x50\x5a\x00\x9d\x01\x2a\x01\x00\x01\x00";
+        let vp8x = |webp: &WebP| webp.chunk_by_id(CHUNK_VP8X).unwrap().content().clone();
+
+        let mut webp = from_chunks(&[
+            (CHUNK_VP8X, b"\x08\x00\x00\x00\xcc\x02\x00\xff\x01\x00"),
+            (CHUNK_VP8, vp8),
+            (CHUNK_EXIF, b"exif"),
+        ]);
+        webp.set_icc_profile(Some(Bytes::from_static(b"icc")));
+        let expected = Bytes::from_static(b"\x28\x00\x00\x00\xcc\x02\x00\xff\x01\x00");
+        assert_eq!(vp8x(&webp), RiffContent::Data(expected));
+
+        let mut webp = from_chunks(&[
+            (CHUNK_VP8X, b"\x30\x00\x00\x00\xcc\x02\x00\xff\x01\x00"),
+            (CHUNK_ICCP, b"icc"),
+            (CHUNK_ALPH, b""),
+            (CHUNK_VP8, vp8),
+        ]);
+        webp.set_icc_profile(None);
+        webp.set_exif(Some(Bytes::from_static(b"exif")));
+        let expected = Bytes::from_static(b"\x18\x00\x00\x00\xcc\x02\x00\xff\x01\x00");
+        assert_eq!(vp8x(&webp), RiffContent::Data(expected));
+
+        let mut webp = from_chunks(&[
+            (CHUNK_VP8X, b"\x28\x00\x00\x00\xcc\x02\x00\xff\x01\x00"),
+            (CHUNK_ICCP, b"icc"),
+            (CHUNK_VP8, vp8),
+            (CHUNK_EXIF, b"exif"),
+        ]);
+        webp.set_exif(None);
+        let expected = Bytes::from_static(b"\x20\x00\x00\x00\xcc\x02\x00\xff\x01\x00");
+        assert_eq!(vp8x(&webp), RiffContent::Data(expected));
+
+        // only the ICC and EXIF flags are updated
+        let mut webp = from_chunks(&[
+            (CHUNK_VP8X, b"\x00\x00\x00\x00\xcc\x02\x00\xff\x01\x00"),
+            (CHUNK_VP8, vp8),
+            (CHUNK_XMP, b"xmp"),
+        ]);
+        webp.set_icc_profile(Some(Bytes::from_static(b"icc")));
+        let expected = Bytes::from_static(b"\x20\x00\x00\x00\xcc\x02\x00\xff\x01\x00");
+        assert_eq!(vp8x(&webp), RiffContent::Data(expected));
+
+        // a malformed empty VP8X chunk is left as is
+        let mut webp = from_chunks(&[(CHUNK_VP8X, b""), (CHUNK_VP8, vp8), (CHUNK_EXIF, b"exif")]);
+        webp.set_icc_profile(Some(Bytes::from_static(b"icc")));
+        assert_eq!(vp8x(&webp), RiffContent::Data(Bytes::new()));
     }
 }

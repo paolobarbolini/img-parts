@@ -29,4 +29,10 @@ impl WebPFlags {
         }
         flags
     }
+
+    /// Replaces the ICC and EXIF flags in `flags`, the first byte
+    /// of a VP8X chunk, with the ones from `self`
+    pub(super) fn merge(self, flags: u8) -> u8 {
+        (flags & !(ICC | EXIF)) | (self.0[0] & (ICC | EXIF))
+    }
 }
