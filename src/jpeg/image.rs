@@ -128,16 +128,15 @@ impl Jpeg {
         ImageEncoder::from(self)
     }
 
-    /// Get the position where new ICC and EXIF segments are inserted:
-    /// after the first 3 segments, but before the frame and scan headers
-    fn metadata_position(&self) -> usize {
+    /// Get the position of the frame header, or of the scan header if
+    /// there's none, which metadata segments must be inserted before
+    fn frame_header_position(&self) -> usize {
         self.segments
             .iter()
             .position(|segment| {
                 markers::is_sof(segment.marker()) || segment.marker() == markers::SOS
             })
             .unwrap_or(self.segments.len())
-            .min(3)
     }
 }
 
@@ -198,7 +197,8 @@ impl ImageICC for Jpeg {
         self.segments.retain(|segment| segment.icc().is_none());
 
         if let Some(profile) = profile {
-            let pos = self.metadata_position();
+            // after the first 3 segments, but before the frame header
+            let pos = self.frame_header_position().min(3);
             let segments_n = (profile.len() / ICC_SEGMENT_MAX_SIZE + 1) as u8;
             for i in 0..segments_n {
                 let start = ICC_SEGMENT_MAX_SIZE * i as usize;
@@ -217,12 +217,27 @@ impl ImageEXIF for Jpeg {
     }
 
     fn set_exif(&mut self, exif: Option<Bytes>) {
+        let old_pos = self
+            .segments
+            .iter()
+            .position(|segment| segment.exif().is_some());
         self.segments.retain(|segment| segment.exif().is_none());
 
         // EXIF metadata that doesn't fit into a single segment can't be stored
         if let Some(exif) = exif.filter(|exif| exif.len() <= EXIF_MAX_SIZE) {
+            // where the old EXIF segment was, so that the other segments don't
+            // move, or right after the SOI marker and any APP0 segments, like
+            // the JFIF one, but before the frame header
+            let pos = old_pos
+                .unwrap_or_else(|| {
+                    self.segments
+                        .iter()
+                        .position(|segment| segment.marker() != markers::APP0)
+                        .unwrap_or(self.segments.len())
+                })
+                .min(self.frame_header_position());
             let segment = JpegSegment::new_exif(exif);
-            self.segments.insert(self.metadata_position(), segment);
+            self.segments.insert(pos, segment);
         }
     }
 }
@@ -252,14 +267,14 @@ mod tests {
         for (layout, expected) in [
             (
                 &[APP0, SOF0, DQT, SOS][..],
-                &[APP0, APP2, APP1, SOF0, DQT, SOS][..],
+                &[APP0, APP1, APP2, SOF0, DQT, SOS][..],
             ),
             (
                 &[APP0, DQT, SOF2, DHT, SOS],
-                &[APP0, DQT, APP2, APP1, SOF2, DHT, SOS],
+                &[APP0, APP1, DQT, APP2, SOF2, DHT, SOS],
             ),
             // no frame header before the scan
-            (&[APP0, SOS], &[APP0, APP2, APP1, SOS]),
+            (&[APP0, SOS], &[APP0, APP1, APP2, SOS]),
         ] {
             let segments = layout
                 .iter()
@@ -271,6 +286,33 @@ mod tests {
 
             let result: Vec<u8> = jpeg.segments().iter().map(JpegSegment::marker).collect();
             assert_eq!(result, expected);
+        }
+    }
+
+    #[test]
+    fn set_exif_position() {
+        use markers::{APP0, APP1, APP2, DQT, SOF0};
+
+        let segment = JpegSegment::new_with_contents;
+        let jfif = segment(APP0, Bytes::from_static(b"JFIF\0"));
+        let exif = JpegSegment::new_exif(Bytes::from_static(b"old"));
+        let xmp = segment(APP1, Bytes::from_static(b"http://ns.adobe.com/xap/1.0/\0"));
+        let mpf = segment(APP2, Bytes::from_static(b"MPF\0"));
+        let dqt = segment(DQT, Bytes::from_static(b"dqt"));
+        let sof = segment(SOF0, Bytes::from_static(b"sof"));
+        for (segments, pos) in [
+            // before the XMP segment, which would hide it from some readers
+            (vec![jfif.clone(), xmp.clone(), dqt.clone()], 1),
+            // where it was, since moving it across the MPF segment breaks its offsets
+            (vec![exif.clone(), xmp, mpf.clone(), dqt.clone()], 0),
+            (vec![jfif.clone(), mpf.clone(), exif.clone(), dqt], 2),
+            // but before the frame header
+            (vec![jfif, mpf, sof, exif], 2),
+        ] {
+            let mut jpeg = Jpeg { segments };
+            jpeg.set_exif(Some(Bytes::from_static(b"exif")));
+            let exif_pos = jpeg.segments().iter().position(|s| s.exif().is_some());
+            assert_eq!(exif_pos, Some(pos));
         }
     }
 
