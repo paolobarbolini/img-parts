@@ -128,10 +128,10 @@ impl ImageICC for Png {
         let mut contents = self.chunk_by_type(CHUNK_ICCP)?.contents().clone();
 
         // skip nul-terminated profile name
-        while contents.get_u8() != 0 {}
+        while contents.try_get_u8().ok()? != 0 {}
 
         // match on the compression method
-        match contents.get_u8() {
+        match contents.try_get_u8().ok()? {
             0 => decompress_to_vec_zlib(&contents).ok().map(Bytes::from),
             _ => None,
         }
@@ -168,6 +168,33 @@ impl ImageEXIF for Png {
         if let Some(exif) = exif {
             let chunk = PngChunk::new(CHUNK_EXIF, exif);
             self.chunks.insert(self.chunks.len() - 1, chunk);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec;
+
+    use super::*;
+
+    #[test]
+    fn icc_profile() {
+        let mut png = Png {
+            chunks: vec![PngChunk::new(*b"IHDR", Bytes::new())],
+        };
+        let profile = Bytes::from_static(b"profile");
+        png.set_icc_profile(Some(profile.clone()));
+        assert_eq!(png.icc_profile(), Some(profile));
+    }
+
+    #[test]
+    fn malformed_icc_profile() {
+        for contents in [&b""[..], b"icc", b"icc\0"] {
+            let png = Png {
+                chunks: vec![PngChunk::new(CHUNK_ICCP, Bytes::from_static(contents))],
+            };
+            assert_eq!(png.icc_profile(), None);
         }
     }
 }
