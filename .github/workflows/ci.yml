@@ -6,17 +6,27 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 env:
   RUST_BACKTRACE: full
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   rustfmt:
     name: rustfmt / linux / stable
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install rust
         run: |
@@ -30,10 +40,13 @@ jobs:
   clippy:
     name: clippy / linux / stable
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install rust
         run: |
@@ -47,6 +60,7 @@ jobs:
   test:
     name: test / ${{ matrix.name }}
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     strategy:
       matrix:
@@ -68,7 +82,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install rust
         run: |
