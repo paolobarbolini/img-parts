@@ -74,7 +74,13 @@ impl WebP {
     }
 
     fn infer_kind(&self) -> VP8Kind {
-        if self.has_chunk(CHUNK_ICCP) | self.has_chunk(CHUNK_EXIF) {
+        // only the extended file format can have chunks other than the image data
+        let extended = self
+            .chunks()
+            .iter()
+            .any(|chunk| !matches!(chunk.id(), CHUNK_VP8 | CHUNK_VP8L | CHUNK_VP8X));
+
+        if extended {
             VP8Kind::VP8X
         } else {
             // TODO: VP8L
@@ -386,5 +392,50 @@ mod tests {
         ]);
         webp.set_icc_profile(Some(icc));
         assert_eq!(ids(&webp), [CHUNK_VP8X, CHUNK_ICCP, CHUNK_ANIM, CHUNK_ANMF]);
+    }
+
+    #[test]
+    fn create_vp8x_for_extended_features() {
+        let vp8 = b"\x50\x5a\x00\x9d\x01\x2a\x01\x00\x01\x00";
+        for (id, flags) in [
+            (CHUNK_ALPH, 0x10),
+            (CHUNK_XMP, 0x04),
+            (CHUNK_ANIM, 0x02),
+            (*b"ABCD", 0),
+        ] {
+            let mut webp = from_chunks(&[(CHUNK_VP8, vp8), (id, b"")]);
+            webp.set_exif(None);
+            assert_eq!(ids(&webp), [CHUNK_VP8X, CHUNK_VP8, id]);
+
+            let vp8x = [flags, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            let expected = RiffContent::Data(Bytes::copy_from_slice(&vp8x));
+            assert_eq!(webp.chunk_by_id(CHUNK_VP8X).unwrap().content(), &expected);
+        }
+    }
+
+    #[test]
+    fn keep_vp8x_for_extended_features() {
+        let vp8 = b"\x50\x5a\x00\x9d\x01\x2a\x01\x00\x01\x00";
+        let vp8x = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+        let mut webp = from_chunks(&[(CHUNK_VP8X, &vp8x), (CHUNK_ALPH, b""), (CHUNK_VP8, vp8)]);
+        webp.set_exif(None);
+        assert_eq!(ids(&webp), [CHUNK_VP8X, CHUNK_ALPH, CHUNK_VP8]);
+
+        let mut webp = from_chunks(&[(CHUNK_VP8X, &vp8x), (CHUNK_ANIM, b""), (CHUNK_ANMF, b"")]);
+        webp.set_icc_profile(None);
+        assert_eq!(ids(&webp), [CHUNK_VP8X, CHUNK_ANIM, CHUNK_ANMF]);
+
+        let mut webp = from_chunks(&[(CHUNK_VP8X, &vp8x), (CHUNK_VP8, vp8), (CHUNK_XMP, b"")]);
+        webp.set_exif(None);
+        assert_eq!(ids(&webp), [CHUNK_VP8X, CHUNK_VP8, CHUNK_XMP]);
+
+        let mut webp = from_chunks(&[(CHUNK_VP8X, &vp8x), (*b"ABCD", b""), (CHUNK_VP8, vp8)]);
+        webp.set_exif(None);
+        assert_eq!(ids(&webp), [CHUNK_VP8X, *b"ABCD", CHUNK_VP8]);
+
+        let mut webp = from_chunks(&[(CHUNK_VP8X, &vp8x), (CHUNK_ICCP, b""), (CHUNK_VP8, vp8)]);
+        webp.set_icc_profile(None);
+        assert_eq!(ids(&webp), [CHUNK_VP8]);
     }
 }
