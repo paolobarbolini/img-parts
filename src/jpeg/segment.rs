@@ -1,10 +1,11 @@
+use alloc::vec::Vec;
 use core::fmt;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use super::markers::{self, has_entropy, has_length};
 use crate::{
-    encoder::{EncodeAt, ImageEncoder},
+    encoder::{Encode, ImageEncoder},
     util::{read_checked, split_to_checked},
     Error, Result, EXIF_DATA_PREFIX,
 };
@@ -171,35 +172,22 @@ impl JpegSegment {
     }
 }
 
-impl EncodeAt for JpegSegment {
-    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
-        match pos {
-            0 => {
-                let mut vec = BytesMut::with_capacity(4);
-                vec.put_u8(markers::P);
-                vec.put_u8(self.marker());
-                if has_length(self.marker()) {
-                    vec.put_u16((self.len() - 2).try_into().unwrap());
-                }
-
-                Some(vec.freeze())
-            }
-            1 if !self.contents.is_empty() => Some(self.contents.clone()),
-            1 if !self.entropy.is_empty() => Some(self.entropy.clone()),
-            2 if !self.contents.is_empty() && !self.entropy.is_empty() => {
-                Some(self.entropy.clone())
-            }
-            _ => {
-                let decrement =
-                    1 + !self.contents.is_empty() as usize + !self.entropy.is_empty() as usize;
-                *pos = pos.saturating_sub(decrement);
-                None
-            }
+impl Encode for JpegSegment {
+    fn encode(&self, pieces: &mut Vec<Bytes>) {
+        let mut vec = BytesMut::with_capacity(4);
+        vec.put_u8(markers::P);
+        vec.put_u8(self.marker());
+        if has_length(self.marker()) {
+            vec.put_u16((self.len() - 2).try_into().unwrap());
         }
-    }
+        pieces.push(vec.freeze());
 
-    fn len(&self) -> usize {
-        self.len()
+        if !self.contents.is_empty() {
+            pieces.push(self.contents.clone());
+        }
+        if !self.entropy.is_empty() {
+            pieces.push(self.entropy.clone());
+        }
     }
 }
 
@@ -213,20 +201,7 @@ impl fmt::Debug for JpegSegment {
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec;
-
-    use bytes::Bytes;
-
     use super::*;
-
-    #[test]
-    fn test_encode_at_underflow() {
-        let segment = JpegSegment::new_with_entropy(0xFF, Bytes::new(), Bytes::from(vec![4, 5, 6]));
-
-        // This would cause an underflow if decrement not checked.
-        let mut pos = 1;
-        segment.encode_at(&mut pos);
-    }
 
     #[test]
     fn encode_without_length() {

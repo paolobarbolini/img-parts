@@ -1,3 +1,5 @@
+use alloc::vec::{self, Vec};
+use core::fmt;
 #[cfg(feature = "std")]
 use std::io::{self, Write};
 
@@ -58,14 +60,14 @@ pub use read::ImageEncoderReader;
 /// * [`PngChunk`][crate::png::PngChunk::encoder]
 ///
 /// See their documentation for more.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct ImageEncoder<I> {
     inner: I,
-    pos: usize,
+    pieces: vec::IntoIter<Bytes>,
 }
 
-impl<I: EncodeAt> ImageEncoder<I> {
+impl<I: Encode> ImageEncoder<I> {
     /// Turns this `ImageEncoder` into a reader that will never fail
     #[inline]
     #[cfg(feature = "std")]
@@ -102,7 +104,8 @@ impl<I: EncodeAt> ImageEncoder<I> {
     /// If possible [`write_to`][Self::write_to] should be used instead,
     /// since it avoids creating a second in memory copy of the file.
     pub fn bytes(self) -> Bytes {
-        let mut bytes = BytesMut::with_capacity(self.inner.len());
+        let len = self.pieces.as_slice().iter().map(Bytes::len).sum();
+        let mut bytes = BytesMut::with_capacity(len);
         for piece in self {
             bytes.extend_from_slice(&piece);
         }
@@ -111,31 +114,37 @@ impl<I: EncodeAt> ImageEncoder<I> {
     }
 }
 
-impl<I: EncodeAt> Iterator for ImageEncoder<I> {
+impl<I: Encode> Iterator for ImageEncoder<I> {
     type Item = Bytes;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut pos = self.pos;
-        let item = self.inner.encode_at(&mut pos);
+        self.pieces.next()
+    }
+}
 
-        if item.is_some() {
-            self.pos += 1;
+impl<I: Encode> From<I> for ImageEncoder<I> {
+    fn from(inner: I) -> ImageEncoder<I> {
+        let mut pieces = Vec::new();
+        inner.encode(&mut pieces);
+
+        Self {
+            inner,
+            pieces: pieces.into_iter(),
         }
-
-        item
     }
 }
 
-impl<I: EncodeAt> From<I> for ImageEncoder<I> {
-    fn from(ea: I) -> ImageEncoder<I> {
-        Self { inner: ea, pos: 0 }
+impl<I: fmt::Debug> fmt::Debug for ImageEncoder<I> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ImageEncoder")
+            .field("inner", &self.inner)
+            .finish_non_exhaustive()
     }
 }
 
-pub trait EncodeAt {
-    fn encode_at(&self, pos: &mut usize) -> Option<Bytes>;
-
-    fn len(&self) -> usize;
+pub trait Encode {
+    /// Appends the pieces making up the encoded representation to `pieces`
+    fn encode(&self, pieces: &mut Vec<Bytes>);
 }
 
 #[cfg(test)]
@@ -146,32 +155,28 @@ mod tests {
 
     use bytes::Bytes;
 
-    use super::{EncodeAt, ImageEncoder};
+    use super::{Encode, ImageEncoder};
 
-    struct FakeEncodeAt {
+    struct FakeEncode {
         vec: Vec<Bytes>,
     }
 
-    impl EncodeAt for FakeEncodeAt {
-        fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
-            self.vec.get(*pos).cloned()
-        }
-
-        fn len(&self) -> usize {
-            self.vec.iter().map(|buf| buf.len()).sum()
+    impl Encode for FakeEncode {
+        fn encode(&self, pieces: &mut Vec<Bytes>) {
+            pieces.extend(self.vec.iter().cloned());
         }
     }
 
     #[test]
     fn image_encoder_iter() {
-        let encoder_at = FakeEncodeAt {
+        let fake = FakeEncode {
             vec: vec![
                 Bytes::from_static(b"abcd"),
                 Bytes::from_static(b"9876"),
                 Bytes::from_static(b"ducks!"),
             ],
         };
-        let mut encoder = ImageEncoder::from(encoder_at);
+        let mut encoder = ImageEncoder::from(fake);
 
         assert_eq!(Some(Bytes::from_static(b"abcd")), encoder.next());
         assert_eq!(Some(Bytes::from_static(b"9876")), encoder.next());
@@ -182,14 +187,14 @@ mod tests {
     #[test]
     #[cfg(feature = "std")]
     fn image_encoder_read() {
-        let encoder_at = FakeEncodeAt {
+        let fake = FakeEncode {
             vec: vec![
                 Bytes::from_static(b"abcd"),
                 Bytes::from_static(b"9876"),
                 Bytes::from_static(b"duck!"),
             ],
         };
-        let encoder = ImageEncoder::from(encoder_at);
+        let encoder = ImageEncoder::from(fake);
         let mut reader = encoder.read();
 
         let expected = [
@@ -214,14 +219,14 @@ mod tests {
     #[test]
     #[cfg(feature = "std")]
     fn image_encoder_read_buffered() {
-        let encoder_at = FakeEncodeAt {
+        let fake = FakeEncode {
             vec: vec![
                 Bytes::from_static(b"abcd"),
                 Bytes::from_static(b"9876"),
                 Bytes::from_static(b"duck!"),
             ],
         };
-        let encoder = ImageEncoder::from(encoder_at);
+        let encoder = ImageEncoder::from(fake);
         let mut reader = encoder.read();
 
         let expected = [
@@ -250,14 +255,14 @@ mod tests {
     #[test]
     #[cfg(feature = "std")]
     fn image_encoder_write_to() {
-        let encoder_at = FakeEncodeAt {
+        let fake = FakeEncode {
             vec: vec![
                 Bytes::from_static(b"abcd"),
                 Bytes::from_static(b"9876"),
                 Bytes::from_static(b"duck!"),
             ],
         };
-        let encoder = ImageEncoder::from(encoder_at);
+        let encoder = ImageEncoder::from(fake);
 
         let mut vec = Vec::new();
         let written = encoder.write_to(&mut vec).expect("write_to");

@@ -5,7 +5,7 @@ use miniz_oxide::{deflate::compress_to_vec_zlib, inflate::decompress_to_vec_zlib
 
 use super::PngChunk;
 use crate::{
-    encoder::{EncodeAt, ImageEncoder},
+    encoder::{Encode, ImageEncoder},
     util::read_u8_array,
     Error, ImageEXIF, ImageICC, Result,
 };
@@ -105,26 +105,13 @@ impl Png {
     }
 }
 
-impl EncodeAt for Png {
-    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
-        match pos {
-            0 => Some(Bytes::from_static(SIGNATURE)),
-            _ => {
-                *pos -= 1;
+impl Encode for Png {
+    fn encode(&self, pieces: &mut Vec<Bytes>) {
+        pieces.push(Bytes::from_static(SIGNATURE));
 
-                for chunk in &self.chunks {
-                    if let Some(bytes) = chunk.encode_at(pos) {
-                        return Some(bytes);
-                    }
-                }
-
-                None
-            }
+        for chunk in &self.chunks {
+            chunk.encode(pieces);
         }
-    }
-
-    fn len(&self) -> usize {
-        self.len()
     }
 }
 

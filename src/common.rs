@@ -1,7 +1,9 @@
+use alloc::vec::Vec;
+
 use bytes::Bytes;
 
 use crate::{
-    encoder::{EncodeAt, ImageEncoder},
+    encoder::{Encode, ImageEncoder},
     jpeg::{is_jpeg, Jpeg},
     png::{is_png, Png},
     webp::{is_webp, WebP},
@@ -57,17 +59,13 @@ impl DynImage {
     }
 }
 
-impl EncodeAt for DynImage {
-    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
+impl Encode for DynImage {
+    fn encode(&self, pieces: &mut Vec<Bytes>) {
         match self {
-            Self::Jpeg(jpeg) => jpeg.encode_at(pos),
-            Self::Png(png) => png.encode_at(pos),
-            Self::WebP(webp) => webp.inner().encode_at(pos),
+            Self::Jpeg(jpeg) => jpeg.encode(pieces),
+            Self::Png(png) => png.encode(pieces),
+            Self::WebP(webp) => webp.inner().encode(pieces),
         }
-    }
-
-    fn len(&self) -> usize {
-        self.len()
     }
 }
 

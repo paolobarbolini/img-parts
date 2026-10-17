@@ -4,7 +4,7 @@ use bytes::{Buf, Bytes, BytesMut};
 
 use super::{markers, mpf, JpegSegment};
 use crate::{
-    encoder::{EncodeAt, ImageEncoder},
+    encoder::{Encode, ImageEncoder},
     util::read_checked,
     Error, ImageEXIF, ImageICC, Result, EXIF_DATA_PREFIX,
 };
@@ -188,33 +188,17 @@ impl Jpeg {
     }
 }
 
-impl EncodeAt for Jpeg {
-    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
-        match pos {
-            0 => {
-                let vec = Bytes::from_static(&[markers::P, markers::SOI]);
-                Some(vec)
-            }
-            _ => {
-                *pos -= 1;
+impl Encode for Jpeg {
+    fn encode(&self, pieces: &mut Vec<Bytes>) {
+        pieces.push(Bytes::from_static(&[markers::P, markers::SOI]));
 
-                for segment in &self.segments {
-                    if let Some(bytes) = segment.encode_at(pos) {
-                        return Some(bytes);
-                    }
-                }
-
-                if *pos == 0 && !self.has_entropy() {
-                    return Some(Bytes::from_static(&[markers::P, markers::EOI]));
-                }
-
-                None
-            }
+        for segment in &self.segments {
+            segment.encode(pieces);
         }
-    }
 
-    fn len(&self) -> usize {
-        self.len()
+        if !self.has_entropy() {
+            pieces.push(Bytes::from_static(&[markers::P, markers::EOI]));
+        }
     }
 }
 

@@ -3,7 +3,7 @@ use std::io::{Read, Result};
 
 use bytes::Bytes;
 
-use super::{EncodeAt, ImageEncoder};
+use super::{Encode, ImageEncoder};
 
 /// A reader for `ImageEncoder` that will never fail
 ///
@@ -15,7 +15,7 @@ pub struct ImageEncoderReader<I> {
     buf: Bytes,
 }
 
-impl<I: EncodeAt> Read for ImageEncoderReader<I> {
+impl<I: Encode> Read for ImageEncoderReader<I> {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         if buf.is_empty() {
             return Ok(0);
@@ -56,32 +56,28 @@ mod tests {
 
     use bytes::Bytes;
 
-    use super::{EncodeAt, ImageEncoder};
+    use super::{Encode, ImageEncoder};
 
-    struct FakeEncodeAt {
+    struct FakeEncode {
         vec: Vec<Bytes>,
     }
 
-    impl EncodeAt for FakeEncodeAt {
-        fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
-            self.vec.get(*pos).cloned()
-        }
-
-        fn len(&self) -> usize {
-            self.vec.iter().map(|buf| buf.len()).sum()
+    impl Encode for FakeEncode {
+        fn encode(&self, pieces: &mut Vec<Bytes>) {
+            pieces.extend(self.vec.iter().cloned());
         }
     }
 
     #[test]
     fn image_encoder_reader_read() {
-        let encoder_at = FakeEncodeAt {
+        let fake = FakeEncode {
             vec: vec![
                 Bytes::from_static(b"abcd"),
                 Bytes::from_static(b"9876"),
                 Bytes::from_static(b"ducks!"),
             ],
         };
-        let encoder = ImageEncoder::from(encoder_at);
+        let encoder = ImageEncoder::from(fake);
         let mut reader = encoder.read();
 
         let mut r = [0u8; 2];
@@ -117,14 +113,14 @@ mod tests {
 
     #[test]
     fn image_encoder_reader_empty_pieces() {
-        let encoder_at = FakeEncodeAt {
+        let fake = FakeEncode {
             vec: vec![
                 Bytes::from_static(b"abcd"),
                 Bytes::new(),
                 Bytes::from_static(b"efgh"),
             ],
         };
-        let mut reader = ImageEncoder::from(encoder_at).read();
+        let mut reader = ImageEncoder::from(fake).read();
 
         let mut out = Vec::new();
         reader.read_to_end(&mut out).unwrap();

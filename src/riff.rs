@@ -4,7 +4,7 @@ use core::fmt;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use crate::{
-    encoder::{EncodeAt, ImageEncoder},
+    encoder::{Encode, ImageEncoder},
     util::{read_checked, read_u8_array, split_to_checked},
     Error, Result,
 };
@@ -110,25 +110,14 @@ impl RiffChunk {
     }
 }
 
-impl EncodeAt for RiffChunk {
-    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
-        match pos {
-            0 => {
-                let mut vec = BytesMut::with_capacity(8);
-                vec.extend_from_slice(&self.id);
-                vec.put_u32_le(self.content.len());
+impl Encode for RiffChunk {
+    fn encode(&self, pieces: &mut Vec<Bytes>) {
+        let mut vec = BytesMut::with_capacity(8);
+        vec.extend_from_slice(&self.id);
+        vec.put_u32_le(self.content.len());
+        pieces.push(vec.freeze());
 
-                Some(vec.freeze())
-            }
-            _ => {
-                *pos -= 1;
-                self.content.encode_at(pos)
-            }
-        }
-    }
-
-    fn len(&self) -> usize {
-        self.len() as usize
+        self.content.encode(pieces);
     }
 }
 
@@ -213,39 +202,27 @@ impl RiffContent {
     }
 }
 
-impl EncodeAt for RiffContent {
-    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
+impl Encode for RiffContent {
+    fn encode(&self, pieces: &mut Vec<Bytes>) {
         match self {
             RiffContent::List { kind, subchunks } => {
                 if let Some(kind) = kind {
-                    if *pos == 0 {
-                        return Some(Bytes::copy_from_slice(kind.as_ref()));
-                    }
-
-                    *pos -= 1;
-                };
+                    pieces.push(Bytes::copy_from_slice(kind.as_ref()));
+                }
 
                 for chunk in subchunks {
-                    if let Some(bytes) = chunk.encode_at(pos) {
-                        return Some(bytes);
-                    }
+                    chunk.encode(pieces);
                 }
-
-                None
             }
-            RiffContent::Data(data) => match pos {
-                0 => Some(data.clone()),
-                1 if data.len() % 2 == 1 => Some(Bytes::from_static(&[0x00])),
-                _ => {
-                    *pos -= 1 + data.len() % 2;
-                    None
-                }
-            },
-        }
-    }
+            RiffContent::Data(data) => {
+                pieces.push(data.clone());
 
-    fn len(&self) -> usize {
-        self.len() as usize
+                // RIFF chunks with an uneven number of bytes have an extra 0x00 padding byte
+                if data.len() % 2 == 1 {
+                    pieces.push(Bytes::from_static(&[0x00]));
+                }
+            }
+        }
     }
 }
 

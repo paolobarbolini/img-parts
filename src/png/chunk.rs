@@ -1,10 +1,11 @@
+use alloc::vec::Vec;
 use core::fmt;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crc32fast::Hasher;
 
 use crate::{
-    encoder::{EncodeAt, ImageEncoder},
+    encoder::{Encode, ImageEncoder},
     util::{read_checked, read_u8_array, split_to_checked},
     Error, Result,
 };
@@ -86,26 +87,15 @@ impl PngChunk {
     }
 }
 
-impl EncodeAt for PngChunk {
-    fn encode_at(&self, pos: &mut usize) -> Option<Bytes> {
-        match pos {
-            0 => {
-                let mut bytes = BytesMut::with_capacity(8);
-                bytes.put_u32(self.contents.len().try_into().unwrap());
-                bytes.extend_from_slice(&self.kind);
-                Some(bytes.freeze())
-            }
-            1 => Some(self.contents.clone()),
-            2 => Some(Bytes::copy_from_slice(&self.crc)),
-            _ => {
-                *pos -= 3;
-                None
-            }
-        }
-    }
+impl Encode for PngChunk {
+    fn encode(&self, pieces: &mut Vec<Bytes>) {
+        let mut bytes = BytesMut::with_capacity(8);
+        bytes.put_u32(self.contents.len().try_into().unwrap());
+        bytes.extend_from_slice(&self.kind);
+        pieces.push(bytes.freeze());
 
-    fn len(&self) -> usize {
-        self.len()
+        pieces.push(self.contents.clone());
+        pieces.push(Bytes::copy_from_slice(&self.crc));
     }
 }
 
