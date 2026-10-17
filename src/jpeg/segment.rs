@@ -34,6 +34,9 @@ impl JpegSegment {
     }
 
     /// Construct a `JpegSegment` with `contents`
+    ///
+    /// Encoding it panics if `contents` is bigger than 65533 bytes,
+    /// the most a segment can hold.
     #[inline]
     pub fn new_with_contents(marker: u8, contents: Bytes) -> JpegSegment {
         JpegSegment {
@@ -44,6 +47,9 @@ impl JpegSegment {
     }
 
     /// Construct a `JpegSegment` with `contents` and `entropy`
+    ///
+    /// Encoding it panics if `contents` is bigger than 65533 bytes,
+    /// the most a segment can hold.
     #[inline]
     pub fn new_with_entropy(marker: u8, contents: Bytes, entropy: Bytes) -> JpegSegment {
         JpegSegment {
