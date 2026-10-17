@@ -200,13 +200,13 @@ impl ImageICC for Jpeg {
             // after the first 3 segments, but before the frame header
             let pos = self.frame_header_position().min(3);
             let segments_n = (profile.len() / ICC_SEGMENT_MAX_SIZE + 1) as u8;
-            for i in 0..segments_n {
+            let segments = (0..segments_n).map(|i| {
                 let start = ICC_SEGMENT_MAX_SIZE * i as usize;
                 let end = core::cmp::min(profile.len(), start + ICC_SEGMENT_MAX_SIZE);
 
-                let segment = JpegSegment::new_icc(i + 1, segments_n, profile.slice(start..end));
-                self.segments.insert(pos, segment);
-            }
+                JpegSegment::new_icc(i + 1, segments_n, profile.slice(start..end))
+            });
+            self.segments.splice(pos..pos, segments);
         }
     }
 }
@@ -258,6 +258,20 @@ mod tests {
         jpeg.set_exif(Some(exif.clone()));
         assert_eq!(jpeg.icc_profile(), Some(profile));
         assert_eq!(jpeg.exif(), Some(exif));
+    }
+
+    #[test]
+    fn set_icc_profile_order() {
+        let mut jpeg = Jpeg::from_bytes(Bytes::from_static(&[0xFF, 0xD8, 0xFF, 0xD9])).unwrap();
+        jpeg.set_icc_profile(Some(vec![0; 2 * ICC_SEGMENT_MAX_SIZE + 1].into()));
+
+        let order: Vec<(u8, u8)> = jpeg
+            .segments()
+            .iter()
+            .filter_map(|segment| segment.icc())
+            .map(|(seqno, num, _)| (seqno, num))
+            .collect();
+        assert_eq!(order, [(1, 3), (2, 3), (3, 3)]);
     }
 
     #[test]
