@@ -165,7 +165,7 @@ impl ImageICC for Png {
     }
 }
 
-// https://ftp-osl.osuosl.org/pub/libpng/documents/pngext-1.5.0.html#C.eXIf
+// https://www.w3.org/TR/png-3/#eXIf
 impl ImageEXIF for Png {
     fn exif(&self) -> Option<Bytes> {
         Some(self.chunk_by_type(CHUNK_EXIF)?.contents().clone())
@@ -176,8 +176,8 @@ impl ImageEXIF for Png {
 
         if let Some(exif) = exif {
             let chunk = PngChunk::new(CHUNK_EXIF, exif);
-            // right before the IEND chunk
-            let pos = self.chunks.len().saturating_sub(1);
+            // right after the IHDR chunk, since it must come before the image data
+            let pos = self.chunks.len().min(1);
             self.chunks.insert(pos, chunk);
         }
     }
@@ -226,6 +226,21 @@ mod tests {
         let exif = Bytes::from_static(b"exif");
         with_exif.set_exif(Some(exif.clone()));
         assert_eq!(with_exif.exif(), Some(exif));
+    }
+
+    #[test]
+    fn set_exif_position() {
+        let mut png = Png {
+            chunks: vec![
+                PngChunk::new(*b"IHDR", Bytes::new()),
+                PngChunk::new(*b"IDAT", Bytes::new()),
+                PngChunk::new(CHUNK_IEND, Bytes::new()),
+            ],
+        };
+        png.set_exif(Some(Bytes::from_static(b"exif")));
+
+        let kinds: Vec<[u8; 4]> = png.chunks().iter().map(PngChunk::kind).collect();
+        assert_eq!(kinds, [*b"IHDR", CHUNK_EXIF, *b"IDAT", CHUNK_IEND]);
     }
 
     #[test]
