@@ -3,6 +3,9 @@ use bytes::Bytes;
 /// Trait to read and write the raw ICC Profile for an image
 pub trait ImageICC {
     /// Get the raw ICC Profile of this image
+    ///
+    /// PNG ICC profiles bigger than 16 MiB once decompressed are ignored,
+    /// to limit the memory needed to read them.
     fn icc_profile(&self) -> Option<Bytes>;
 
     /// Overwrites the pre-existing ICC Profile of this image.

@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use miniz_oxide::{deflate::compress_to_vec_zlib, inflate::decompress_to_vec_zlib};
+use miniz_oxide::{deflate::compress_to_vec_zlib, inflate::decompress_to_vec_zlib_with_limit};
 
 use super::PngChunk;
 use crate::{
@@ -12,6 +12,11 @@ use crate::{
 
 // the 8 byte signature
 pub(crate) const SIGNATURE: &[u8] = &[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+// profiles decompressing to more than this are ignored, so that a small
+// iCCP chunk can't allocate unbounded memory. libpng rejects profiles
+// bigger than 8 MB by default, so real files aren't affected
+const ICC_PROFILE_MAX_SIZE: usize = 16 * 1024 * 1024;
 
 pub const CHUNK_ICCP: [u8; 4] = *b"iCCP";
 pub const CHUNK_EXIF: [u8; 4] = *b"eXIf";
@@ -132,7 +137,9 @@ impl ImageICC for Png {
 
         // match on the compression method
         match contents.try_get_u8().ok()? {
-            0 => decompress_to_vec_zlib(&contents).ok().map(Bytes::from),
+            0 => decompress_to_vec_zlib_with_limit(&contents, ICC_PROFILE_MAX_SIZE)
+                .ok()
+                .map(Bytes::from),
             _ => None,
         }
     }
@@ -186,6 +193,20 @@ mod tests {
         let profile = Bytes::from_static(b"profile");
         png.set_icc_profile(Some(profile.clone()));
         assert_eq!(png.icc_profile(), Some(profile));
+    }
+
+    #[test]
+    fn icc_profile_size_limit() {
+        let mut png = Png {
+            chunks: vec![PngChunk::new(*b"IHDR", Bytes::new())],
+        };
+
+        png.set_icc_profile(Some(vec![0; ICC_PROFILE_MAX_SIZE].into()));
+        let len = png.icc_profile().map(|profile| profile.len());
+        assert_eq!(len, Some(ICC_PROFILE_MAX_SIZE));
+
+        png.set_icc_profile(Some(vec![0; ICC_PROFILE_MAX_SIZE + 1].into()));
+        assert!(png.icc_profile().is_none());
     }
 
     #[test]
