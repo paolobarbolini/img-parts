@@ -116,19 +116,33 @@ impl Jpeg {
     ///
     /// - The SOI marker (2 bytes).
     /// - The size of every segment including the size of the encoded entropy.
+    /// - The EOI marker (2 bytes) if no segment has entropy, which otherwise
+    ///   includes it.
     pub fn len(&self) -> usize {
         // SOI marker (2 bytes) + length of every segment including entropy
-        2 + self
+        let len = 2 + self
             .segments
             .iter()
             .map(|segment| segment.len_with_entropy())
-            .sum::<usize>()
+            .sum::<usize>();
+
+        // EOI marker (2 bytes)
+        if self.has_entropy() {
+            len
+        } else {
+            len + 2
+        }
     }
 
     /// Create an [encoder][crate::ImageEncoder] for this `Jpeg`
     #[inline]
     pub fn encoder(self) -> ImageEncoder<Self> {
         ImageEncoder::from(self)
+    }
+
+    /// Check if any segment has entropy, which then includes the EOI marker
+    fn has_entropy(&self) -> bool {
+        self.segments.iter().any(JpegSegment::has_entropy)
     }
 
     /// Get the size of the segments before and after the MPF segment
@@ -188,6 +202,10 @@ impl EncodeAt for Jpeg {
                     if let Some(bytes) = segment.encode_at(pos) {
                         return Some(bytes);
                     }
+                }
+
+                if *pos == 0 && !self.has_entropy() {
+                    return Some(Bytes::from_static(&[markers::P, markers::EOI]));
                 }
 
                 None
@@ -359,6 +377,18 @@ mod tests {
         for len in [ICC_MAX_SIZE + 1, 2 * ICC_MAX_SIZE] {
             jpeg.set_icc_profile(Some(vec![0; len].into()));
             assert!(jpeg.icc_profile().is_none());
+        }
+    }
+
+    #[test]
+    fn encode_without_entropy() {
+        for file in [
+            &[0xFF, 0xD8, 0xFF, 0xD9][..],
+            &[0xFF, 0xD8, 0xFF, 0xFE, 0x00, 0x04, b'h', b'i', 0xFF, 0xD9],
+        ] {
+            let jpeg = Jpeg::from_bytes(Bytes::from_static(file)).unwrap();
+            assert_eq!(jpeg.len(), file.len());
+            assert_eq!(jpeg.encoder().bytes(), file);
         }
     }
 
