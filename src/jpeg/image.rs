@@ -381,6 +381,19 @@ mod tests {
     }
 
     #[test]
+    fn markers_length() {
+        // a DNL segment, which has a length, and an RST0 marker, which doesn't
+        let file = Bytes::from_static(&[
+            0xFF, 0xD8, 0xFF, 0xDC, 0x00, 0x04, 0x00, 0x10, 0xFF, 0xD0, 0xFF, 0xDB, 0x00, 0x03,
+            0x00, 0xFF, 0xD9,
+        ]);
+        let jpeg = Jpeg::from_bytes(file).unwrap();
+        let dnl = jpeg.segment_by_marker(markers::DNL).unwrap();
+        assert_eq!(dnl.contents(), &Bytes::from_static(&[0x00, 0x10]));
+        assert!(jpeg.segment_by_marker(markers::DQT).is_some());
+    }
+
+    #[test]
     fn encode_without_entropy() {
         for file in [
             &[0xFF, 0xD8, 0xFF, 0xD9][..],

@@ -88,7 +88,7 @@ pub const JPG13: u8 = 0xFD;
 pub const COM: u8 = 0xFE;
 
 pub(crate) fn has_length(marker: u8) -> bool {
-    matches!(marker, RST0..=RST7 | APP0..=APP15 | SOF0..=SOF15 | SOS | COM | DQT | DRI)
+    matches!(marker, SOF0..=SOF15 | SOS..=EXP | APP0..=APP15 | JPG0..=JPG13 | COM)
 }
 
 pub(crate) fn has_entropy(marker: u8) -> bool {
@@ -104,6 +104,15 @@ mod tests {
     use alloc::vec::Vec;
 
     use super::*;
+
+    #[test]
+    fn markers_without_length() {
+        let markers: Vec<u8> = (SOF0..=COM).filter(|&marker| !has_length(marker)).collect();
+        assert_eq!(
+            markers,
+            [RST0, RST1, RST2, RST3, RST4, RST5, RST6, RST7, SOI, EOI]
+        );
+    }
 
     #[test]
     fn sof_markers() {
