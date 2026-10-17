@@ -11,21 +11,20 @@ pub enum VP8Kind {
 }
 
 // the first 10 bytes are necessary
-pub(crate) fn size_from_vp8_header(b: &[u8]) -> (u16, u16) {
+pub(crate) fn size_from_vp8_header(b: &[u8]) -> Option<(u16, u16)> {
+    let b = b.get(..10)?;
     let tag = u24_from_le_bytes(b[0..3].try_into().unwrap());
 
     let keyframe = tag & 1 == 0;
-
-    if keyframe {
-        if b[3..6] != [0x9d, 0x01, 0x2a] {
-            panic!("invalid frame magic bytes");
-        }
-
-        let width = u16::from_le_bytes(b[6..8].try_into().unwrap());
-        let height = u16::from_le_bytes(b[8..10].try_into().unwrap());
-
-        (width & 0x3FFF, height & 0x3FFF)
-    } else {
-        panic!("expected keyframe")
+    if !keyframe || b[3..6] != [0x9d, 0x01, 0x2a] {
+        return None;
     }
+
+    let width = u16::from_le_bytes(b[6..8].try_into().unwrap()) & 0x3FFF;
+    let height = u16::from_le_bytes(b[8..10].try_into().unwrap()) & 0x3FFF;
+    if width == 0 || height == 0 {
+        return None;
+    }
+
+    Some((width, height))
 }

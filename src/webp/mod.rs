@@ -101,7 +101,11 @@ impl WebP {
                 .position(|chunk| chunk.id() == CHUNK_ICCP)
                 .unwrap_or(0);
 
-            let (width, height) = self.dimensions().unwrap();
+            // the VP8X chunk can't be created without knowing the canvas size
+            let (width, height) = match self.dimensions() {
+                Some(dimensions) => dimensions,
+                None => return,
+            };
 
             let flags = WebPFlags::from_webp(self);
             let mut content = BytesMut::with_capacity(10);
@@ -123,6 +127,8 @@ impl WebP {
     /// If this `WebP` has a `VP8X` chunk the dimension is the canvas size.
     ///
     /// Otherwise the dimension is read from the VP8 bitstream header.
+    ///
+    /// Returns `None` if the dimensions can't be read.
     pub fn dimensions(&self) -> Option<(u32, u32)> {
         if let Some(vp8x) = self.chunk_by_id(CHUNK_VP8X) {
             if let Some(data) = vp8x.content().data() {
@@ -136,8 +142,9 @@ impl WebP {
 
         if let Some(vp8) = self.chunk_by_id(CHUNK_VP8) {
             if let Some(data) = vp8.content().data() {
-                let (width, height) = size_from_vp8_header(data);
-                return Some((width as u32, height as u32));
+                if let Some((width, height)) = size_from_vp8_header(data) {
+                    return Some((width as u32, height as u32));
+                }
             }
         }
 
@@ -277,5 +284,61 @@ impl ImageEXIF for WebP {
         }
 
         self.convert_into_infered_kind();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn from_chunks(chunks: &[([u8; 4], &'static [u8])]) -> WebP {
+        let subchunks = chunks
+            .iter()
+            .map(|&(id, data)| RiffChunk::new(id, RiffContent::Data(Bytes::from_static(data))))
+            .collect();
+        let riff = RiffChunk::new(
+            *b"RIFF",
+            RiffContent::List {
+                kind: Some(*b"WEBP"),
+                subchunks,
+            },
+        );
+        WebP::new(riff).unwrap()
+    }
+
+    #[test]
+    fn vp8_dimensions() {
+        let webp = from_chunks(&[(CHUNK_VP8, b"\x50\x5a\x00\x9d\x01\x2a\xcd\x02\x00\x02")]);
+        assert_eq!(webp.dimensions(), Some((717, 512)));
+    }
+
+    #[test]
+    fn malformed_vp8_dimensions() {
+        for data in [
+            &b""[..],
+            b"\x50\x5a\x00\x9d\x01\x2a",
+            b"\x50\x5a\x00\x00\x00\x00\xcd\x02\x00\x02",
+            b"\x51\x5a\x00\x9d\x01\x2a\xcd\x02\x00\x02",
+            b"\x50\x5a\x00\x9d\x01\x2a\x00\x00\x00\x02",
+            b"\x50\x5a\x00\x9d\x01\x2a\xcd\x02\x00\x00",
+            b"\x50\x5a\x00\x9d\x01\x2a\x00\xc0\x00\x02",
+        ] {
+            let webp = from_chunks(&[(CHUNK_VP8, data)]);
+            assert_eq!(webp.dimensions(), None);
+        }
+    }
+
+    #[test]
+    fn set_metadata_unknown_dimensions() {
+        for mut webp in [
+            from_chunks(&[]),
+            from_chunks(&[(CHUNK_VP8, b"\x50\x5a\x00\x9d\x01\x2a")]),
+            from_chunks(&[(CHUNK_VP8L, b"\x2f\x00")]),
+        ] {
+            webp.set_icc_profile(Some(Bytes::from_static(b"icc")));
+            webp.set_exif(Some(Bytes::from_static(b"exif")));
+            assert!(webp.has_chunk(CHUNK_ICCP) && webp.has_chunk(CHUNK_EXIF));
+            assert!(!webp.has_chunk(CHUNK_VP8X));
+        }
     }
 }
