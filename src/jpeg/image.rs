@@ -6,7 +6,7 @@ use super::{markers, JpegSegment};
 use crate::{
     encoder::{EncodeAt, ImageEncoder},
     util::read_checked,
-    Error, ImageEXIF, ImageICC, Result,
+    Error, ImageEXIF, ImageICC, Result, EXIF_DATA_PREFIX,
 };
 
 // segment size (2 byte) - segment meta (14 byte)
@@ -14,6 +14,9 @@ pub const ICC_PREFIX_SIZE: usize = 2 + 14;
 
 // max chunk size: u16::max_value() - ICC_PREFIX_SIZE
 const ICC_SEGMENT_MAX_SIZE: usize = 65535 - ICC_PREFIX_SIZE;
+
+// max EXIF size: u16::max_value() - segment size (2 byte) - EXIF prefix
+const EXIF_MAX_SIZE: usize = 65535 - 2 - EXIF_DATA_PREFIX.len();
 
 /// The representation of a Jpeg image.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -216,7 +219,8 @@ impl ImageEXIF for Jpeg {
     fn set_exif(&mut self, exif: Option<Bytes>) {
         self.segments.retain(|segment| segment.exif().is_none());
 
-        if let Some(exif) = exif {
+        // EXIF metadata that doesn't fit into a single segment can't be stored
+        if let Some(exif) = exif.filter(|exif| exif.len() <= EXIF_MAX_SIZE) {
             let segment = JpegSegment::new_exif(exif);
             self.segments.insert(self.metadata_position(), segment);
         }
@@ -268,6 +272,18 @@ mod tests {
             let result: Vec<u8> = jpeg.segments().iter().map(JpegSegment::marker).collect();
             assert_eq!(result, expected);
         }
+    }
+
+    #[test]
+    fn set_exif_size_limit() {
+        let mut jpeg = Jpeg::from_bytes(Bytes::from_static(&[0xFF, 0xD8, 0xFF, 0xD9])).unwrap();
+
+        jpeg.set_exif(Some(vec![0; EXIF_MAX_SIZE].into()));
+        assert_eq!(jpeg.exif().map(|exif| exif.len()), Some(EXIF_MAX_SIZE));
+        assert_eq!(jpeg.clone().encoder().bytes().len(), jpeg.len());
+
+        jpeg.set_exif(Some(vec![0; EXIF_MAX_SIZE + 1].into()));
+        assert!(jpeg.exif().is_none());
     }
 
     #[test]

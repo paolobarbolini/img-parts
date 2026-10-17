@@ -24,5 +24,8 @@ pub trait ImageEXIF {
     ///
     /// Removes any pre-existing EXIF metadata from this image.
     /// Adds new EXIF metadata if `exif` is `Some`.
+    ///
+    /// JPEG images can't store more than 65527 bytes of EXIF metadata,
+    /// so bigger metadata is discarded when setting it on them.
     fn set_exif(&mut self, exif: Option<Bytes>);
 }
