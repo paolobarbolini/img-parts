@@ -105,7 +105,7 @@ impl JpegSegment {
     }
 
     /// Get the size of this `JpegSegment` once it is encoded, including
-    /// the `Entropy`.
+    /// the entropy.
     ///
     /// The size is the sum of:
     ///
@@ -113,6 +113,9 @@ impl JpegSegment {
     /// - The length (2 bytes) if this marker has a length.
     /// - The size of the content.
     /// - The size of the encoded entropy data.
+    ///
+    /// For the SOS segment of a parsed [`Jpeg`][super::Jpeg], the entropy
+    /// includes the rest of the file.
     pub fn len_with_entropy(&self) -> usize {
         self.len() + self.entropy.len()
     }

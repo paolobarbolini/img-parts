@@ -22,6 +22,12 @@ const ICC_MAX_SIZE: usize = 255 * ICC_SEGMENT_MAX_SIZE;
 const EXIF_MAX_SIZE: usize = 65535 - 2 - EXIF_DATA_PREFIX.len();
 
 /// The representation of a Jpeg image.
+///
+/// Segments are parsed up to the first SOS segment, whose entropy holds the
+/// rest of the file: any following scans, the EOI marker and anything after
+/// it. This keeps all of it exactly as it was when encoding the image, but
+/// it means that new segments must be inserted before the SOS segment, as
+/// they would otherwise end up after the end of the image.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Jpeg {
     segments: Vec<JpegSegment>,
@@ -86,6 +92,8 @@ impl Jpeg {
     }
 
     /// Get a mutable reference to the segments of this `Jpeg`
+    ///
+    /// New segments must be inserted before the SOS segment, see [`Jpeg`].
     #[inline]
     pub fn segments_mut(&mut self) -> &mut Vec<JpegSegment> {
         &mut self.segments
