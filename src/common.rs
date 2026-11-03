@@ -52,6 +52,19 @@ impl DynImage {
         }
     }
 
+    /// Get the width and height of the inner image
+    ///
+    /// Returns `None` if the dimensions can't be read.
+    pub fn dimensions(&self) -> Option<(u32, u32)> {
+        match self {
+            Self::Jpeg(jpeg) => jpeg
+                .dimensions()
+                .map(|(width, height)| (width.into(), height.into())),
+            Self::Png(png) => png.dimensions(),
+            Self::WebP(webp) => webp.dimensions(),
+        }
+    }
+
     /// Create an [encoder][crate::ImageEncoder] for the inner image
     #[inline]
     pub fn encoder(self) -> ImageEncoder<Self> {

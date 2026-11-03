@@ -18,6 +18,7 @@ pub(crate) const SIGNATURE: &[u8] = &[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 
 // bigger than 8 MB by default, so real files aren't affected
 const ICC_PROFILE_MAX_SIZE: usize = 16 * 1024 * 1024;
 
+pub const CHUNK_IHDR: [u8; 4] = *b"IHDR";
 pub const CHUNK_ICCP: [u8; 4] = *b"iCCP";
 pub const CHUNK_EXIF: [u8; 4] = *b"eXIf";
 pub const CHUNK_IEND: [u8; 4] = *b"IEND";
@@ -85,6 +86,24 @@ impl Png {
     /// Remove every chunk with a type of `kind`
     pub fn remove_chunks_by_type(&mut self, kind: [u8; 4]) {
         self.chunks_mut().retain(|chunk| chunk.kind() != kind);
+    }
+
+    /// Get the width and height of this `Png`.
+    ///
+    /// The dimensions are read from the IHDR chunk.
+    ///
+    /// Returns `None` if the dimensions can't be read.
+    pub fn dimensions(&self) -> Option<(u32, u32)> {
+        let ihdr = self.chunk_by_type(CHUNK_IHDR)?;
+
+        let range = ihdr.contents().get(0..8)?;
+        let width = u32::from_be_bytes(range[0..4].try_into().unwrap());
+        let height = u32::from_be_bytes(range[4..8].try_into().unwrap());
+        if width == 0 || height == 0 {
+            return None;
+        }
+
+        Some((width, height))
     }
 
     /// Get the total size of the `Png` once it is encoded.
@@ -179,6 +198,35 @@ mod tests {
     use alloc::vec;
 
     use super::*;
+
+    #[test]
+    fn dimensions() {
+        let png = Png {
+            chunks: vec![PngChunk::new(
+                CHUNK_IHDR,
+                Bytes::from_static(b"\x00\x00\x02\xcd\x00\x00\x02\x00\x08\x02\x00\x00\x00"),
+            )],
+        };
+        assert_eq!(png.dimensions(), Some((717, 512)));
+    }
+
+    #[test]
+    fn malformed_dimensions() {
+        for contents in [
+            &b""[..],
+            b"\x00\x00\x02\xcd\x00\x00\x02",
+            b"\x00\x00\x00\x00\x00\x00\x02\x00",
+            b"\x00\x00\x02\xcd\x00\x00\x00\x00",
+        ] {
+            let png = Png {
+                chunks: vec![PngChunk::new(CHUNK_IHDR, Bytes::from_static(contents))],
+            };
+            assert_eq!(png.dimensions(), None);
+        }
+
+        let png = Png::from_bytes(Bytes::from_static(SIGNATURE)).unwrap();
+        assert_eq!(png.dimensions(), None);
+    }
 
     #[test]
     fn icc_profile() {

@@ -118,6 +118,29 @@ impl Jpeg {
         self.segments.retain(|segment| segment.marker() != marker);
     }
 
+    /// Get the width and height of this `Jpeg`.
+    ///
+    /// The dimensions are read from the first frame header (SOFn segment).
+    ///
+    /// Returns `None` if the dimensions can't be read, including when the
+    /// height is defined by a DNL segment after the first scan.
+    pub fn dimensions(&self) -> Option<(u16, u16)> {
+        let sof = self
+            .segments
+            .iter()
+            .find(|segment| markers::is_sof(segment.marker()))?;
+
+        // the height and width come after 1 byte of sample precision
+        let range = sof.contents().get(1..5)?;
+        let height = u16::from_be_bytes(range[0..2].try_into().unwrap());
+        let width = u16::from_be_bytes(range[2..4].try_into().unwrap());
+        if width == 0 || height == 0 {
+            return None;
+        }
+
+        Some((width, height))
+    }
+
     /// Get the total size of the `Jpeg` once it is encoded
     ///
     /// The size is the sum of:
@@ -307,6 +330,45 @@ mod tests {
     use alloc::{vec, vec::Vec};
 
     use super::*;
+
+    #[test]
+    fn dimensions() {
+        let jpeg = Jpeg {
+            segments: vec![
+                JpegSegment::new_with_contents(markers::APP0, Bytes::from_static(b"JFIF\0")),
+                JpegSegment::new_with_contents(
+                    markers::SOF2,
+                    Bytes::from_static(b"\x08\x02\x00\x02\xcd\x03"),
+                ),
+                JpegSegment::new_with_contents(
+                    markers::SOF0,
+                    Bytes::from_static(b"\x08\x00\x01\x00\x01\x03"),
+                ),
+            ],
+        };
+        assert_eq!(jpeg.dimensions(), Some((717, 512)));
+    }
+
+    #[test]
+    fn malformed_dimensions() {
+        for contents in [
+            &b""[..],
+            b"\x08\x02\x00\x02",
+            b"\x08\x00\x00\x02\xcd\x03",
+            b"\x08\x02\x00\x00\x00\x03",
+        ] {
+            let jpeg = Jpeg {
+                segments: vec![JpegSegment::new_with_contents(
+                    markers::SOF0,
+                    Bytes::from_static(contents),
+                )],
+            };
+            assert_eq!(jpeg.dimensions(), None);
+        }
+
+        let jpeg = Jpeg::from_bytes(Bytes::from_static(&[0xFF, 0xD8, 0xFF, 0xD9])).unwrap();
+        assert_eq!(jpeg.dimensions(), None);
+    }
 
     #[test]
     fn set_metadata_few_segments() {

@@ -23,6 +23,7 @@ fn read_write_every_image() {
             .expect("from_bytes")
             .expect("supported");
         assert_eq!(img.len(), buf.len());
+        assert_eq!(img.dimensions(), Some((717, 512)));
         let out = img.encoder().bytes();
         assert_eq!(out.len(), buf.len());
         assert_eq!(out, buf);
