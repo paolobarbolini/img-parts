@@ -1,3 +1,9 @@
+## [0.4.2]
+
+* Support reading JPEG and PNG dimensions with `Jpeg::dimensions`, `Png::dimensions` and `DynImage::dimensions`
+
+[0.4.2]: https://github.com/paolobarbolini/img-parts/compare/v0.4.1...v0.4.2
+
 ## [0.4.1]
 
 * Fix panics with malformed images in `WebP::dimensions`, `Png::icc_profile`, `Jpeg::icc_profile` and the `set_icc_profile` and `set_exif` methods
